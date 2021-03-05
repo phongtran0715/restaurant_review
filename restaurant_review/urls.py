@@ -19,10 +19,10 @@ from django.urls import path, include, re_path
 from rest_framework_swagger.views import get_swagger_view
 
 
-schema_view = get_swagger_view(title='Project Name')
+schema_view = get_swagger_view(title='Restaurant Rating API')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    re_path(r'^api/(?P<version>(v1|v2))/', include('review.urls')),
+    re_path(r'^api/', include('review.urls')),
     url(r'^api/docs/', schema_view, name='api-doc'),
 ]

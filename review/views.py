@@ -19,6 +19,9 @@ rating_points = (5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1)
 # Create your views here.
 @api_view(['GET'])
 def api_get_review_view(request, **kwargs):
+	"""
+	?res_id -- restaurant id
+	""" 
 	if request.method == 'GET':
 		try:
 			restaurant_id = request.GET.get('res_id', 1)
@@ -29,7 +32,7 @@ def api_get_review_view(request, **kwargs):
 			return Response(response, status=status.HTTP_200_OK)
 		except Review.DoesNotExist:
 			response = {
-				"message": "Not found tracking data"
+				"message": "Not found review data"
 			}
 			return Response(response, status=status.HTTP_404_NOT_FOUND)
 	else:
@@ -37,6 +40,18 @@ def api_get_review_view(request, **kwargs):
 
 @api_view(['POST'])
 def api_insert_review_view(request, **kwargs):
+	"""
+	"author" : "author_name",
+	"rating" : "1",
+	"weight_score" : "1",
+	"text" : "content",
+	"restaurant_id" : "1",
+	"review_count" : "30",
+	"category" : "Pizza",
+	"country" : "United States",
+	"state" :"GA",
+	"created_date" : "2021-01-18"
+	"""
 	if request.method == 'POST':
 		serializer = ReviewSerializer(data=request.data)
 		if serializer.is_valid():
@@ -57,6 +72,9 @@ def api_insert_review_view(request, **kwargs):
 
 @api_view(['GET'])
 def api_get_restaurant_score(request, **kwargs):
+	"""
+	?res_id -- restaurant id
+	""" 
 	if request.method == 'GET':
 		try:
 			restaurant_id = request.GET.get('res_id', 1)
@@ -79,7 +97,7 @@ def api_get_restaurant_score(request, **kwargs):
 			return Response(response, status=status.HTTP_200_OK)
 		except Review.DoesNotExist:
 			response = {
-				"message": "Not found tracking data"
+				"message": "Not found review data"
 			}
 			return Response(response, status=status.HTTP_404_NOT_FOUND)
 	else:
@@ -98,15 +116,10 @@ def calculate_weight_score_view(restaurant_id):
 		data.append(frame_data)
 
 	df = pd.DataFrame(data,columns=rating_points)
-	print(df)
-	# for (columnName, columnData) in df.iteritems():
-	# 	print(type(columnData))
-	# calculate total point 
 	total_point = 0.0
 	sum_rows = df.sum(axis=1)
 	for index in range (0, len(weight_scores)):
 		total_point += weight_scores[index] * sum_rows[index]
-	print("total point : {}".format(total_point))
 
 	if total_point > 0.0:
 		res_score = 0.0
@@ -114,12 +127,10 @@ def calculate_weight_score_view(restaurant_id):
 			sum_per_col = 0.0
 			for col_index in range(0, len(columnData)):
 				sum_per_col += columnData[col_index] * weight_scores[col_index]
-			print('colm name : {}'.format(float(columnName)))
 			sum_per_col = (sum_per_col / total_point) / 5.0 * float(columnName)
 			res_score += sum_per_col
 	else:
 		res_score = 0.0
-	print("res_score: {}".format(round(res_score, 8)))
 	return res_score
 	
 
@@ -133,10 +144,8 @@ def get_review_count(restaurant_id):
 def get_review_accuracey(restaurant_id):
 	# get total review
 	total_record = Review.objects.filter().count()
-	print("total record : {}".format(total_record))
 
 	total_review_count = Review.objects.filter().aggregate(Sum('review_count'))['review_count__sum']
-	print("total review : {}".format(total_review_count))
 
 	res_review_count = Review.objects.filter(restaurant_id=restaurant_id).aggregate(Sum('review_count'))['review_count__sum']
 
@@ -144,7 +153,6 @@ def get_review_accuracey(restaurant_id):
 		accuracey = 0
 	else:
 		accuracey = res_review_count / (total_review_count / total_record)
-	print('accuracey : {}'.format(round(accuracey, 2)))
 	return round(accuracey, 2)
 
 def get_date_range(restaurant_id):
