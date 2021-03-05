@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.response import Response
 from review.models import Review
 from review.serializers import ReviewSerializer
@@ -9,6 +9,7 @@ import logging
 from datetime import datetime
 import pandas as pd
 from django.db.models import Sum
+from rest_framework_swagger.renderers import OpenAPIRenderer, SwaggerUIRenderer
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,12 @@ def get_date_range(restaurant_id):
 	date_to = Review.objects.filter(restaurant_id=restaurant_id).order_by('-created_date').latest('created_date')
 	date_from  = Review.objects.filter(restaurant_id=restaurant_id).order_by('-created_date').earliest('created_date')
 	return str(date_from.created_date), str(date_to.created_date)
+
+@api_view()
+@renderer_classes([OpenAPIRenderer, SwaggerUIRenderer])
+def schema_view(request):
+	generator = schemas.SchemaGenerator(title='Rest Swagger')
+	return Response(generator.get_schema(request=request))
 	
 
 
