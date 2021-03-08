@@ -106,6 +106,44 @@ def api_get_restaurant_score(request, **kwargs):
 		return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['GET'])
+def api_get_all_restaurant_score(request, **kwargs):
+	if request.method == 'GET':
+		try:
+			response = {}
+			result = []
+			unique_restaurants = Review.objects.filter().values('restaurant_id').distinct()
+			for res in unique_restaurants:
+				restaurant_id = res['restaurant_id']
+				reviews = Review.objects.filter(restaurant_id=restaurant_id)
+				weight_score = calculate_weight_score_view(restaurant_id)
+				accuracey = get_review_accuracey(restaurant_id)
+				final_score = round(weight_score * accuracey / 100, 8)
+				date_from , date_to = get_date_range(restaurant_id)
+
+				data = {
+					"restaurant_id" : restaurant_id,
+					"category" : "",
+					"review_count" : get_review_count(restaurant_id),
+					"accuracey" : accuracey,
+					"weighted_score" : weight_score,
+					"final_score" : final_score,
+					"date_from" : date_from,
+					"date_to" : date_to
+				}
+				result.append(data)
+			response['total'] = unique_restaurants.count()
+			response['data'] = result
+			return Response(response, status=status.HTTP_200_OK)
+		except Review.DoesNotExist:
+			response = {
+				"message": "Not found review data"
+			}
+			return Response(response, status=status.HTTP_404_NOT_FOUND)
+	else:
+		return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
 def calculate_weight_score_view(restaurant_id):
 	data = []
 	for w_score in weight_scores:
@@ -119,7 +157,7 @@ def calculate_weight_score_view(restaurant_id):
 		data.append(frame_data)
 
 	df = pd.DataFrame(data,columns=rating_points)
-	print(df)
+	# print(df)
 	total_point = 0.0
 	sum_rows = df.sum(axis=1)
 	for index in range (0, len(weight_scores)):
@@ -145,10 +183,10 @@ def get_review_count(restaurant_id):
 def get_review_accuracey(restaurant_id):
 	# get total review
 	total_record = Review.objects.all().count()
-	print("total record : {}".format(total_record))
+	# print("total record : {}".format(total_record))
 
 	num_restaurant = Review.objects.filter().values('restaurant_id').distinct().count()
-	print("number of restaurant : {}".format(num_restaurant))
+	# print("number of restaurant : {}".format(num_restaurant))
 	# total_review_count = Review.objects.filter().aggregate(Sum('review_count'))['review_count__sum']
 	res_review_count = Review.objects.filter(Q(restaurant_id=restaurant_id)).count()
 	print("restaurant id: {} - review count {}".format(restaurant_id, res_review_count))
