@@ -8,6 +8,7 @@ class Review(models.Model):
 	text = models.CharField(max_length=10240)
 	restaurant_id = models.IntegerField(blank=True, default=0)
 	review_count = models.IntegerField(blank=True, default=0)
+	source = models.CharField(max_length=128, blank=True)
 	category = models.CharField(max_length=45, blank=True)
 	country = models.CharField(max_length=45, blank=True)
 	state = models.CharField(max_length=45, blank=True)

@@ -10,6 +10,7 @@ from datetime import datetime
 import pandas as pd
 from django.db.models import Sum
 from rest_framework_swagger.renderers import OpenAPIRenderer, SwaggerUIRenderer
+from django.db.models import Q
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +48,7 @@ def api_insert_review_view(request, **kwargs):
 	"text" : "content",
 	"restaurant_id" : "1",
 	"review_count" : "30",
+	"source" : "google",
 	"category" : "Pizza",
 	"country" : "United States",
 	"state" :"GA",
@@ -58,7 +60,7 @@ def api_insert_review_view(request, **kwargs):
 			Review.objects.create(author=serializer.data['author'], rating=serializer.data['rating'],
 				weight_score=serializer.data['weight_score'], text=serializer.data['text'],
 				restaurant_id=serializer.data['restaurant_id'], review_count=serializer.data['review_count'],
-				category=serializer.data['category'], country=serializer.data['country'],
+				source=serializer.data['source'], category=serializer.data['category'], country=serializer.data['country'],
 				state=serializer.data['state'], created_date=serializer.data['created_date'])
 			data = {
 					'message' : 'Success'
@@ -81,7 +83,7 @@ def api_get_restaurant_score(request, **kwargs):
 			reviews = Review.objects.filter(restaurant_id=restaurant_id)
 			weight_score = calculate_weight_score_view(restaurant_id)
 			accuracey = get_review_accuracey(restaurant_id)
-			final_score = weight_score * accuracey / 100
+			final_score = round(weight_score * accuracey / 100, 8)
 			date_from , date_to = get_date_range(restaurant_id)
 
 			response = {
@@ -108,7 +110,8 @@ def calculate_weight_score_view(restaurant_id):
 	data = []
 	for w_score in weight_scores:
 		frame_data = [0,0,0,0,0,0,0,0,0]
-		items = Review.objects.filter(restaurant_id=restaurant_id, weight_score=w_score)
+		items = Review.objects.filter(Q(restaurant_id=restaurant_id) & Q(weight_score=w_score) 
+			& (Q(source='google') | Q(source='facebook') | Q(source='opentable') | Q(source='tripadvisor') | Q(source='ubereats')))
 		for item in items:
 			if item.rating in rating_points:
 				index = rating_points.index(item.rating)
@@ -116,6 +119,7 @@ def calculate_weight_score_view(restaurant_id):
 		data.append(frame_data)
 
 	df = pd.DataFrame(data,columns=rating_points)
+	print(df)
 	total_point = 0.0
 	sum_rows = df.sum(axis=1)
 	for index in range (0, len(weight_scores)):
@@ -131,28 +135,28 @@ def calculate_weight_score_view(restaurant_id):
 			res_score += sum_per_col
 	else:
 		res_score = 0.0
-	return res_score
+	return round(res_score, 8)
 	
 
 def get_review_count(restaurant_id):
-	item = Review.objects.filter(restaurant_id=restaurant_id).aggregate(Sum('review_count'))
-	if item['review_count__sum'] is None:
-		return 0
-	else:
-		return item['review_count__sum']
+	count = Review.objects.filter(Q(restaurant_id=restaurant_id)).count()
+	return count
 
 def get_review_accuracey(restaurant_id):
 	# get total review
-	total_record = Review.objects.filter().count()
+	total_record = Review.objects.all().count()
+	print("total record : {}".format(total_record))
 
-	total_review_count = Review.objects.filter().aggregate(Sum('review_count'))['review_count__sum']
+	num_restaurant = Review.objects.filter().values('restaurant_id').distinct().count()
+	print("number of restaurant : {}".format(num_restaurant))
+	# total_review_count = Review.objects.filter().aggregate(Sum('review_count'))['review_count__sum']
+	res_review_count = Review.objects.filter(Q(restaurant_id=restaurant_id)).count()
+	print("restaurant id: {} - review count {}".format(restaurant_id, res_review_count))
 
-	res_review_count = Review.objects.filter(restaurant_id=restaurant_id).aggregate(Sum('review_count'))['review_count__sum']
-
-	if res_review_count is None or total_review_count is None or total_review_count == 0:
+	if res_review_count is None or total_record is None or num_restaurant == 0:
 		accuracey = 0
 	else:
-		accuracey = res_review_count / (total_review_count / total_record)
+		accuracey = res_review_count/ 10 / (total_record / num_restaurant) * 100
 	return round(accuracey, 2)
 
 def get_date_range(restaurant_id):
