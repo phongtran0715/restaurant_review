@@ -113,6 +113,8 @@ def api_get_all_restaurant_score(request, **kwargs):
 			response = {}
 			result = []
 			unique_restaurants = Review.objects.filter().values('restaurant_id').distinct()
+			response['total'] = Review.objects.filter().values('restaurant_id').distinct().count()
+			print("total res: {}".format(response['total']))
 			for res in unique_restaurants:
 				restaurant_id = res['restaurant_id']
 				reviews = Review.objects.filter(restaurant_id=restaurant_id)
@@ -132,7 +134,6 @@ def api_get_all_restaurant_score(request, **kwargs):
 					"date_to" : date_to
 				}
 				result.append(data)
-			response['total'] = unique_restaurants.count()
 			response['data'] = result
 			return Response(response, status=status.HTTP_200_OK)
 		except Review.DoesNotExist:
