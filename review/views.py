@@ -79,10 +79,20 @@ def api_get_restaurant_score(request, **kwargs):
 	""" 
 	if request.method == 'GET':
 		try:
+			# get maximum review count
+			max_review = 0
+			unique_restaurants = Review.objects.filter().values('restaurant_id').distinct()
+			for res in unique_restaurants:
+				res_review_count = Review.objects.filter(restaurant_id=res['restaurant_id']).count()
+				if res_review_count is not None and int(res_review_count) > max_review:
+					max_review=int(res_review_count)
+
+			print("Maximum review : {}".format(max_review))
+
 			restaurant_id = request.GET.get('res_id', 1)
 			reviews = Review.objects.filter(restaurant_id=restaurant_id)
 			weight_score = calculate_weight_score_view(restaurant_id)
-			accuracey = get_review_accuracey(restaurant_id)
+			accuracey = get_review_accuracey(restaurant_id, max_review)
 			final_score = round(weight_score * accuracey / 100, 8)
 			date_from , date_to = get_date_range(restaurant_id)
 
@@ -115,11 +125,20 @@ def api_get_all_restaurant_score(request, **kwargs):
 			unique_restaurants = Review.objects.filter().values('restaurant_id').distinct()
 			response['total'] = Review.objects.filter().values('restaurant_id').distinct().count()
 			print("total res: {}".format(response['total']))
+			# get maximum review count
+			max_review = 0
+			unique_restaurants = Review.objects.filter().values('restaurant_id').distinct()
+			for res in unique_restaurants:
+				res_review_count = Review.objects.filter(restaurant_id=res['restaurant_id']).count()
+				if res_review_count is not None and int(res_review_count) > max_review:
+					max_review=int(res_review_count)
+			print("Maximum review : {}".format(max_review))
+
 			for res in unique_restaurants:
 				restaurant_id = res['restaurant_id']
 				reviews = Review.objects.filter(restaurant_id=restaurant_id)
 				weight_score = calculate_weight_score_view(restaurant_id)
-				accuracey = get_review_accuracey(restaurant_id)
+				accuracey = get_review_accuracey(restaurant_id,max_review)
 				final_score = round(weight_score * accuracey / 100, 8)
 				date_from , date_to = get_date_range(restaurant_id)
 
@@ -181,21 +200,21 @@ def get_review_count(restaurant_id):
 	count = Review.objects.filter(Q(restaurant_id=restaurant_id)).count()
 	return count
 
-def get_review_accuracey(restaurant_id):
+def get_review_accuracey(restaurant_id, max_review):
 	# get total review
-	total_record = Review.objects.all().count()
+	# total_record = Review.objects.all().count()
 	# print("total record : {}".format(total_record))
 
-	num_restaurant = Review.objects.filter().values('restaurant_id').distinct().count()
+	# num_restaurant = Review.objects.filter().values('restaurant_id').distinct().count()
 	# print("number of restaurant : {}".format(num_restaurant))
 	# total_review_count = Review.objects.filter().aggregate(Sum('review_count'))['review_count__sum']
 	res_review_count = Review.objects.filter(Q(restaurant_id=restaurant_id)).count()
 	print("restaurant id: {} - review count {}".format(restaurant_id, res_review_count))
 
-	if res_review_count is None or total_record is None or num_restaurant == 0:
+	if max_review is None or max_review == 0:
 		accuracey = 0
 	else:
-		accuracey = res_review_count/ 10 / (total_record / num_restaurant) * 100
+		accuracey = (res_review_count / max_review) * 100
 	return round(accuracey, 2)
 
 def get_date_range(restaurant_id):
