@@ -4,7 +4,7 @@ import requests
 
 # API_ENDPOINT="http://54.252.173.242:8000/api/review/new/"
 API_ENDPOINT="http://127.0.0.1:8000/api/review/new/"
-file_path="/home/jack/Downloads/restaurant/Requirement_3.xlsx"
+file_path="/home/jack/Downloads/Document/restaurant/Requirement_3_update.xlsx"
 df = pd.read_excel (file_path, engine='openpyxl')
 for index, row in df.iterrows():
 	data = {

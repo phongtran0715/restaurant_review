@@ -11,6 +11,8 @@ import pandas as pd
 from django.db.models import Sum
 from rest_framework_swagger.renderers import OpenAPIRenderer, SwaggerUIRenderer
 from django.db.models import Q
+from restaurant.models import Restaurant
+from django.db.models import Max
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +28,13 @@ def api_get_review_view(request, **kwargs):
 	if request.method == 'GET':
 		try:
 			restaurant_id = request.GET.get('res_id', 1)
-			reviews = Review.objects.filter(restaurant_id=restaurant_id)
+			res_obj = Restaurant.objects.get(res_id=restaurant_id)
 			response = {
-				"data" : reviews.values()
+				"data" : res_obj.res_review.values("author", "rating", "weight_score", "text",
+					"review_count", "source", "category", "country", "state", "created_date")
 			}
 			return Response(response, status=status.HTTP_200_OK)
-		except Review.DoesNotExist:
+		except Restaurant.DoesNotExist:
 			response = {
 				"message": "Not found review data"
 			}
@@ -57,11 +60,21 @@ def api_insert_review_view(request, **kwargs):
 	if request.method == 'POST':
 		serializer = ReviewSerializer(data=request.data)
 		if serializer.is_valid():
-			Review.objects.create(author=serializer.data['author'], rating=serializer.data['rating'],
-				weight_score=serializer.data['weight_score'], text=serializer.data['text'],
-				restaurant_id=serializer.data['restaurant_id'], review_count=serializer.data['review_count'],
+			# TODO: check if request missing restaurant id
+			try:
+				res_obj = Restaurant.objects.get(res_id=request.data['restaurant_id'])
+			except Restaurant.DoesNotExist:
+				res_obj = Restaurant(res_id=request.data['restaurant_id'], name='', number_review=0)
+				res_obj.save()
+
+			review = res_obj.res_review.create(author=serializer.data['author'], rating=serializer.data['rating'],
+				weight_score=serializer.data['weight_score'], text=serializer.data['text'], review_count=serializer.data['review_count'],
 				source=serializer.data['source'], category=serializer.data['category'], country=serializer.data['country'],
 				state=serializer.data['state'], created_date=serializer.data['created_date'])
+			review.save()
+
+			res_obj.number_review = int(res_obj.number_review) + 1
+			res_obj.save()
 			data = {
 					'message' : 'Success'
 				}
@@ -80,26 +93,26 @@ def api_get_restaurant_score(request, **kwargs):
 	if request.method == 'GET':
 		try:
 			# get maximum review count
-			max_review = 0
-			unique_restaurants = Review.objects.filter().values('restaurant_id').distinct()
-			for res in unique_restaurants:
-				res_review_count = Review.objects.filter(restaurant_id=res['restaurant_id']).count()
-				if res_review_count is not None and int(res_review_count) > max_review:
-					max_review=int(res_review_count)
+			try:
+				res_obj = Restaurant.objects.get(res_id=request.GET.get('res_id'))
+			except Restaurant.DoesNotExist:
+				response = {
+					"message": "Not found review data"
+				}
+				return Response(response, status=status.HTTP_404_NOT_FOUND)
 
+			max_review = Restaurant.objects.aggregate(Max('number_review'))['number_review__max']
 			print("Maximum review : {}".format(max_review))
 
-			restaurant_id = request.GET.get('res_id', 1)
-			reviews = Review.objects.filter(restaurant_id=restaurant_id)
-			weight_score = calculate_weight_score_view(restaurant_id)
-			accuracey = get_review_accuracey(restaurant_id, max_review)
+			weight_score = calculate_weight_score_view(res_obj.res_review)
+			accuracey = round((res_obj.number_review / max_review) *100, 2)
 			final_score = round(weight_score * accuracey / 100, 8)
-			date_from , date_to = get_date_range(restaurant_id)
+			date_from , date_to = get_date_range(res_obj.id)
 
 			response = {
-				"restaurant_id" : restaurant_id,
+				"restaurant_id" : res_obj.res_id,
 				"category" : "",
-				"review_count" : get_review_count(restaurant_id),
+				"review_count" : res_obj.number_review,
 				"accuracey" : accuracey,
 				"weighted_score" : weight_score,
 				"final_score" : final_score,
@@ -122,30 +135,22 @@ def api_get_all_restaurant_score(request, **kwargs):
 		try:
 			response = {}
 			result = []
-			unique_restaurants = Review.objects.filter().values('restaurant_id').distinct()
-			response['total'] = Review.objects.filter().values('restaurant_id').distinct().count()
-			print("total res: {}".format(response['total']))
+			restaurants = Restaurant.objects.all()
+			response['total'] = Restaurant.objects.all().count()
 			# get maximum review count
-			max_review = 0
-			unique_restaurants = Review.objects.filter().values('restaurant_id').distinct()
-			for res in unique_restaurants:
-				res_review_count = Review.objects.filter(restaurant_id=res['restaurant_id']).count()
-				if res_review_count is not None and int(res_review_count) > max_review:
-					max_review=int(res_review_count)
+			max_review = Restaurant.objects.all().order_by('-number_review').latest('number_review')
 			print("Maximum review : {}".format(max_review))
 
-			for res in unique_restaurants:
-				restaurant_id = res['restaurant_id']
-				reviews = Review.objects.filter(restaurant_id=restaurant_id)
-				weight_score = calculate_weight_score_view(restaurant_id)
-				accuracey = get_review_accuracey(restaurant_id,max_review)
+			for res in restaurants:
+				weight_score = calculate_weight_score_view(res.res_id)
+				accuracey = round((res.number_review / max_review) *100, 2)
 				final_score = round(weight_score * accuracey / 100, 8)
-				date_from , date_to = get_date_range(restaurant_id)
+				date_from , date_to = get_date_range(res.res_id)
 
 				data = {
-					"restaurant_id" : restaurant_id,
+					"restaurant_id" : res.res_id,
 					"category" : "",
-					"review_count" : get_review_count(restaurant_id),
+					"review_count" : res.number_review,
 					"accuracey" : accuracey,
 					"weighted_score" : weight_score,
 					"final_score" : final_score,
@@ -164,20 +169,27 @@ def api_get_all_restaurant_score(request, **kwargs):
 		return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-def calculate_weight_score_view(restaurant_id):
+def calculate_weight_score_view(res_review):
 	data = []
 	for w_score in weight_scores:
 		frame_data = [0,0,0,0,0,0,0,0,0]
-		items = Review.objects.filter(Q(restaurant_id=restaurant_id) & Q(weight_score=w_score) 
-			& (Q(source='google') | Q(source='facebook') | Q(source='opentable') | Q(source='tripadvisor') | Q(source='ubereats')))
-		for item in items:
-			if item.rating in rating_points:
-				index = rating_points.index(item.rating)
-				frame_data[index] += 1
+		for review in res_review.all():
+			if review.weight_score == w_score and review.source in ("google", "facebook", "opentable", "tripadvisor", "ubereats") :
+				if review.rating in rating_points:
+					index = rating_points.index(review.rating)
+					frame_data[index] += 1
 		data.append(frame_data)
+		
+		# items = Review.objects.filter(Q(restaurant_id=restaurant_id) & Q(weight_score=w_score) 
+		# 	& (Q(source='google') | Q(source='facebook') | Q(source='opentable') | Q(source='tripadvisor') | Q(source='ubereats')))
+		# for item in items:
+		# 	if item.rating in rating_points:
+		# 		index = rating_points.index(item.rating)
+		# 		frame_data[index] += 1
+		# data.append(frame_data)
 
 	df = pd.DataFrame(data,columns=rating_points)
-	# print(df)
+	print(df)
 	total_point = 0.0
 	sum_rows = df.sum(axis=1)
 	for index in range (0, len(weight_scores)):
@@ -194,32 +206,10 @@ def calculate_weight_score_view(restaurant_id):
 	else:
 		res_score = 0.0
 	return round(res_score, 8)
-	
-
-def get_review_count(restaurant_id):
-	count = Review.objects.filter(Q(restaurant_id=restaurant_id)).count()
-	return count
-
-def get_review_accuracey(restaurant_id, max_review):
-	# get total review
-	# total_record = Review.objects.all().count()
-	# print("total record : {}".format(total_record))
-
-	# num_restaurant = Review.objects.filter().values('restaurant_id').distinct().count()
-	# print("number of restaurant : {}".format(num_restaurant))
-	# total_review_count = Review.objects.filter().aggregate(Sum('review_count'))['review_count__sum']
-	res_review_count = Review.objects.filter(Q(restaurant_id=restaurant_id)).count()
-	print("restaurant id: {} - review count {}".format(restaurant_id, res_review_count))
-
-	if max_review is None or max_review == 0:
-		accuracey = 0
-	else:
-		accuracey = (res_review_count / max_review) * 100
-	return round(accuracey, 2)
 
 def get_date_range(restaurant_id):
-	date_to = Review.objects.filter(restaurant_id=restaurant_id).order_by('-created_date').latest('created_date')
-	date_from  = Review.objects.filter(restaurant_id=restaurant_id).order_by('-created_date').earliest('created_date')
+	date_to = Review.objects.filter(res_id_id=restaurant_id).order_by('-created_date').latest('created_date')
+	date_from  = Review.objects.filter(res_id_id=restaurant_id).order_by('-created_date').earliest('created_date')
 	return str(date_from.created_date), str(date_to.created_date)
 
 @api_view()
