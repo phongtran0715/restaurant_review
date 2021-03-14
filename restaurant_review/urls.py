@@ -23,6 +23,6 @@ schema_view = get_swagger_view(title='Restaurant Rating API')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    url(r'^api/', include('review.urls')),
-    url(r'^api/docs/', schema_view, name='api-doc'),
+    path('api/', include('review.urls')),
+    path('api/docs/', schema_view, name='api-doc'),
 ]

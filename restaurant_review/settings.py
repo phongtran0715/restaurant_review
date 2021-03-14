@@ -143,6 +143,8 @@ LOGGING = {
 	}
 }
 
+DATE_INPUT_FORMATS = ['%Y-%m-%d']
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
