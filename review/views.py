@@ -129,7 +129,7 @@ def api_get_restaurant_score(request, **kwargs):
 			max_review = Restaurant.objects.aggregate(Max('number_review'))['number_review__max']
 			print("Maximum review : {}".format(max_review))
 
-			weight_score = calculate_weight_score_view(res_obj.res_review)
+			weight_score = calculate_weight_score_view(res_obj.res_id)
 			accuracey = round((res_obj.number_review / max_review) *100, 2)
 			final_score = round(weight_score * accuracey / 100, 8)
 			date_from , date_to = get_date_range(res_obj.id)
@@ -158,12 +158,54 @@ def api_get_restaurant_score(request, **kwargs):
 def api_get_all_restaurant_score(request, **kwargs):
 	if request.method == 'POST':
 		try:
-			page = request.GET.get('page', 1)
-			start_date=request.GET.get('start_date')
-			end_date=request.GET.get('end_date')
+			start_date = None
+			end_date = None
+			page = 1
+			category = None
+			if "start_date" in request.data:
+				start_date = request.data["start_date"]
+			if "end_date" in request.data:
+				end_date = request.data["end_date"]
+			if "page" in request.data:
+				page = request.data["page"]
+			if "category" in request.data:
+				category = request.data["category"]
+
+			is_and = False
+			sql_query = '''SELECT distinct(res_id_id) as res_item_id, 1 id, count(*) as review_count FROM reviews '''
+
+			if start_date is not None:
+				sql_query += " WHERE created_date >= '{}'".format(start_date)
+				is_and = True
+
+			if end_date is not None:
+				if is_and:
+					sql_query += " AND created_date <= '{}'".format(end_date)
+				else:
+					sql_query += " WHERE created_date <= '{}'".format(end_date)
+					is_and = True
+
+			if category is not None:
+				if is_and:
+					sql_query += " AND category = '{}'".format(category)
+				else:
+					sql_query += " WHERE category = '{}'".format(category)
+					is_and = True
+
+			sql_query += " group by res_item_id order by review_count desc;"
+			# print("query : {}".format(sql_query))
+
+			restaurants = Review.objects.raw(sql_query)
+			if len(list(restaurants)) <= 0:
+				response = {
+					"message": "Not found review data"
+				}
+				return Response(response, status=status.HTTP_404_NOT_FOUND)
+			max_review = restaurants[0].review_count
+			# print("max review count : {}".format(max_review))
+
 			response = {}
 			content = []
-			restaurants = Restaurant.objects.all()
 			paginator = Paginator(restaurants, 20)
 			response['total_record'] = paginator.count
 			response['page'] = page
@@ -175,17 +217,15 @@ def api_get_all_restaurant_score(request, **kwargs):
 			else:
 				page_data = paginator.page(page)
 				# get maximum review count
-				max_review = Restaurant.objects.aggregate(Max('number_review'))['number_review__max']
-				print("Maximum review : {}".format(max_review))
 				for item in page_data:
-					weight_score = calculate_weight_score_view(item.res_review, start_date, end_date)
-					accuracey = round((item.number_review / max_review) *100, 2)
+					weight_score = calculate_weight_score_view(item.res_item_id, start_date, end_date, category)
+					accuracey = round((item.review_count / max_review) *100, 2)
 					final_score = round(weight_score * accuracey / 100, 8)
-					date_from , date_to = get_date_range(item.id)
+					date_from , date_to = get_date_range(item.res_item_id, start_date, end_date)
 					data = {
-						"restaurant_id" : item.res_id,
+						"restaurant_id" : item.res_item_id,
 						"category" : "",
-						"review_count" : item.number_review,
+						"review_count" : item.review_count,
 						"accuracey" : accuracey,
 						"weighted_score" : weight_score,
 						"final_score" : final_score,
@@ -214,27 +254,32 @@ def api_get_all_restaurant_score(request, **kwargs):
 		return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-def calculate_weight_score_view(res_review, start_date=None, end_date=None):
+def calculate_weight_score_view(res_id, start_date=None, end_date=None, category=None):
 	data = []
+	sql_query = ''' SELECT rating, review_count, weight_score, id FROM reviews WHERE res_id_id = {} '''.format(res_id)
+	if start_date is not None:
+		sql_query += " AND created_date >= '{}'".format(start_date)
+
+	if end_date is not None:
+		sql_query += " AND created_date <= '{}'".format(end_date)
+
+	if category is not None:
+		sql_query += " AND category = '{}'".format(category)
+
+	sql_query += " AND (source = 'google' OR source = 'facebook' OR source = 'opentable' OR source = 'tripadvisor' OR source = 'ubereats');"
+
+	# print("query : {}".format(sql_query))
+	review_obj = Review.objects.raw(sql_query)
 	for w_score in weight_scores:
 		frame_data = [0,0,0,0,0,0,0,0,0]
-		for review in res_review.all():
-			if start_date is None or end_date is None:
-				if review.weight_score == w_score and review.source in ("google", "facebook", "opentable", "tripadvisor", "ubereats"):
-					if review.rating in rating_points:
-						index = rating_points.index(review.rating)
-						frame_data[index] += 1
-			else:
-				start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d')
-				end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d')
-				if review.weight_score == w_score and review.source in ("google", "facebook", "opentable", "tripadvisor", "ubereats") and res_review.created_date < end_date and res_review.created_date > start_date:
-					if review.rating in rating_points:
-						index = rating_points.index(review.rating)
-						frame_data[index] += 1
+		for review in review_obj:
+			if review.weight_score == w_score:
+				index = rating_points.index(review.rating)
+				frame_data[index] += 1
 		data.append(frame_data)
 
 	df = pd.DataFrame(data,columns=rating_points)
-	print(df)
+	# print(df)
 	total_point = 0.0
 	sum_rows = df.sum(axis=1)
 	for index in range (0, len(weight_scores)):
@@ -252,10 +297,18 @@ def calculate_weight_score_view(res_review, start_date=None, end_date=None):
 		res_score = 0.0
 	return round(res_score, 8)
 
-def get_date_range(restaurant_id):
-	date_to = Review.objects.filter(res_id_id=restaurant_id).order_by('-created_date').latest('created_date')
-	date_from  = Review.objects.filter(res_id_id=restaurant_id).order_by('-created_date').earliest('created_date')
-	return str(date_from.created_date), str(date_to.created_date)
+def get_date_range(restaurant_id, start_date=None, end_date=None):
+	if start_date is None:
+		date_from  = Review.objects.filter(res_id_id=restaurant_id).order_by('-created_date').earliest('created_date').created_date
+	else:
+		date_from = start_date
+
+	if end_date is None:
+		date_to = Review.objects.filter(res_id_id=restaurant_id).order_by('-created_date').latest('created_date').created_date
+	else:
+		date_to = end_date
+	
+	return str(date_from), str(date_to)
 
 @api_view()
 @renderer_classes([OpenAPIRenderer, SwaggerUIRenderer])

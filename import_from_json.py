@@ -3,8 +3,9 @@ import requests
 from datetime import datetime
 
 
-API_ENDPOINT="http://127.0.0.1:8000/api/review/new/"
-file_path="/home/jack/Downloads/Document/restaurant_api/reviews_dump.json"
+API_ENDPOINT="http://54.252.173.242:8000/api/review/new"
+# API_ENDPOINT="http://127.0.0.1:8000/api/review/new/"
+file_path="/home/jack/Downloads/Document/restaurant/reviews_dump.json"
 
 '''
 {"model": "reviews.review", "pk": 79920, "fields": {"author": "dtm6918", "date": "2019-07-02", "rating": 4.0, "source_url": "https://www.tripadvisor.com.au/Restaurant_Review-g255340-d756226-Reviews-Hog_s_Breath_Cafe-Toowoomba_Queensland.html", "text": "Over all was great service again just a little slow getting back for drink orders but food very good.", "source": "tripadvisor", "batch": null, "restaurant": 1939, "creation_date": "2019-07-02T00:00:00Z", "status": false, "task": "", "task_response": "", "nps_ID": "686162975", "nps_number": "", "nps_email": "", "last_updated_status": "2020-11-05T17:05:09.761Z", "last_updated_task_response": "2020-11-05T17:05:09.761Z", "last_updated_task": "2020-11-05T17:05:09.761Z", "review_removal": null, "reviewer_count": "2"}},

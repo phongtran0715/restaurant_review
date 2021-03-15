@@ -12,7 +12,7 @@ class Review(models.Model):
 	category = models.CharField(max_length=45, blank=True)
 	country = models.CharField(max_length=45, blank=True)
 	state = models.CharField(max_length=45, blank=True)
-	created_date = models.DateTimeField(blank=True, null=True, db_index=True)
+	created_date = models.DateField(blank=True, null=True, db_index=True)
 	res_id = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='res_review')
 
 	def __str__(self):
