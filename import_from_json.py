@@ -3,7 +3,7 @@ import requests
 from datetime import datetime
 
 
-API_ENDPOINT="http://54.252.173.242:8000/api/review/new"
+API_ENDPOINT="http://54.252.173.242:8000/api/review/new/"
 # API_ENDPOINT="http://127.0.0.1:8000/api/review/new/"
 file_path="/home/jack/Downloads/Document/restaurant/reviews_dump.json"
 
@@ -50,12 +50,12 @@ def parse_json(file_path):
 				'category':'NA',
 				'country':'US',
 				'state':'GA',
-				'created_date': datetime.strptime(it['fields']['date'], '%Y-%m-%d')
+				'created_date': it['fields']['date']
 			}
 			try:
 				r = requests.post(url = API_ENDPOINT, data = data)
-				print("status code : {}".format(r.status_code))
-				if r.status_code == 400:
+				print("status code : {} ".format(r.status_code))
+				if r.status_code != 200:
 					print(data)
 			except requests.ConnectionError:
 				print("failed to connect")

@@ -35,11 +35,11 @@ def api_get_review_view(request, **kwargs):
 			record_data = res_obj.res_review.values("author", "rating", "weight_score", "text",
 					"review_count", "source", "category", "country", "state", "created_date")
 			
-			paginator = Paginator(record_data, 50)
+			paginator = Paginator(record_data, 30)
 			response['total_record'] = paginator.count
 			response['page'] = page
 			response['total_page'] = paginator.num_pages
-			response['page_size'] = 50
+			response['page_size'] = 30
 
 			if page > paginator.num_pages or page <= 0:
 				response['data'] = []
@@ -172,7 +172,7 @@ def api_get_all_restaurant_score(request, **kwargs):
 				category = request.data["category"]
 
 			is_and = False
-			sql_query = '''SELECT distinct(res_id_id) as res_item_id, 1 id, count(*) as review_count FROM reviews '''
+			sql_query = '''SELECT distinct(res_id_id) as res_item_id, 1 id, count(*) as review_num FROM reviews '''
 
 			if start_date is not None:
 				sql_query += " WHERE created_date >= '{}'".format(start_date)
@@ -192,7 +192,7 @@ def api_get_all_restaurant_score(request, **kwargs):
 					sql_query += " WHERE category = '{}'".format(category)
 					is_and = True
 
-			sql_query += " group by res_item_id order by review_count desc;"
+			sql_query += " group by res_item_id order by review_num desc;"
 			# print("query : {}".format(sql_query))
 
 			restaurants = Review.objects.raw(sql_query)
@@ -201,7 +201,7 @@ def api_get_all_restaurant_score(request, **kwargs):
 					"message": "Not found review data"
 				}
 				return Response(response, status=status.HTTP_404_NOT_FOUND)
-			max_review = restaurants[0].review_count
+			max_review = restaurants[0].review_num
 			# print("max review count : {}".format(max_review))
 
 			response = {}
@@ -219,13 +219,13 @@ def api_get_all_restaurant_score(request, **kwargs):
 				# get maximum review count
 				for item in page_data:
 					weight_score = calculate_weight_score_view(item.res_item_id, start_date, end_date, category)
-					accuracey = round((item.review_count / max_review) *100, 2)
+					accuracey = round((item.review_num / max_review) *100, 2)
 					final_score = round(weight_score * accuracey / 100, 8)
 					date_from , date_to = get_date_range(item.res_item_id, start_date, end_date)
 					data = {
 						"restaurant_id" : item.res_item_id,
 						"category" : "",
-						"review_count" : item.review_count,
+						"review_number" : item.review_num,
 						"accuracey" : accuracey,
 						"weighted_score" : weight_score,
 						"final_score" : final_score,
