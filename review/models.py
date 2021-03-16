@@ -6,7 +6,7 @@ class Review(models.Model):
 	author = models.CharField(max_length=128)
 	rating = models.FloatField()
 	weight_score = models.FloatField(db_index=True)
-	text = models.CharField(max_length=10240, blank=True)
+	text = models.TextField(blank=True)
 	review_count = models.IntegerField(blank=True, default=0)
 	source = models.CharField(max_length=128, blank=True)
 	category = models.CharField(max_length=45, blank=True)

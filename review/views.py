@@ -156,6 +156,7 @@ def api_get_restaurant_score(request, **kwargs):
 
 @api_view(['POST'])
 def api_get_all_restaurant_score(request, **kwargs):
+	first_time = datetime.datetime.now()
 	if request.method == 'POST':
 		try:
 			start_date = None

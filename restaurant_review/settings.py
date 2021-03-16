@@ -88,6 +88,9 @@ WSGI_APPLICATION = 'restaurant_review.wsgi.application'
 
 DATABASES = {
 	'default': env.db(),
+	'OPTIONS': {
+            'charset': 'utf8mb4'
+        }
 }
 
 
