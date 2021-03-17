@@ -50,6 +50,7 @@ INSTALLED_APPS = [
 	'review',
 	'restaurant',
 	'rest_framework_swagger',
+	'django_crontab',
 ]
 
 MIDDLEWARE = [
@@ -145,6 +146,10 @@ LOGGING = {
 		}
 	}
 }
+
+CRONJOBS = [
+    ('* * * * *', 'review.cron.calculate_restaurant_score'),
+]
 
 DATE_INPUT_FORMATS = ['%Y-%m-%d']
 

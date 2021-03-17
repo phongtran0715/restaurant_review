@@ -21,3 +21,43 @@ class Review(models.Model):
 	class Meta:
 		db_table = "reviews"
 		ordering = ['created_date']
+
+
+class ScoreMonth(models.Model):
+	res_id = models.IntegerField(default=0, blank=False,db_index=True)
+	accuracey = models.IntegerField(default=0, blank=False)
+	final_score = models.FloatField(default=0.0, blank=False)
+	duration = models.DateField(blank=True, null=True, db_index=True)
+
+	def __str__(self):
+		return self.res_id
+
+	class Meta:
+		db_table = "scores_month"
+		ordering = ['final_score']
+
+class ScoreQuarter(models.Model):
+	res_id = models.IntegerField(default=0, blank=False,db_index=True)
+	accuracey = models.IntegerField(default=0, blank=False)
+	final_score = models.FloatField(default=0.0, blank=False)
+	duration = models.DateField(blank=True, null=True, db_index=True)
+
+	def __str__(self):
+		return self.res_id
+
+	class Meta:
+		db_table = "scores_quarter"
+		ordering = ['final_score']
+
+class ScoreYear(models.Model):
+	res_id = models.IntegerField(default=0, blank=False,db_index=True)
+	accuracey = models.IntegerField(default=0, blank=False)
+	final_score = models.FloatField(default=0.0, blank=False)
+	duration = models.DateField(blank=True, null=True, db_index=True)
+
+	def __str__(self):
+		return self.res_id
+
+	class Meta:
+		db_table = "scores_year"
+		ordering = ['final_score']
