@@ -148,7 +148,7 @@ LOGGING = {
 }
 
 CRONJOBS = [
-    ('* * * * *', 'review.cron.calculate_restaurant_score'),
+    ('* * * * *', 'review.cron.build_restaurant_resource'),
 ]
 
 DATE_INPUT_FORMATS = ['%Y-%m-%d']
