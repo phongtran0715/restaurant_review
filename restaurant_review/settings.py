@@ -90,8 +90,8 @@ WSGI_APPLICATION = 'restaurant_review.wsgi.application'
 DATABASES = {
 	'default': env.db(),
 	'OPTIONS': {
-            'charset': 'utf8mb4'
-        }
+			'charset': 'utf8mb4'
+		}
 }
 
 
@@ -136,19 +136,24 @@ LOGGING = {
 			'class': 'logging.FileHandler',
 			'formatter': 'default',
 			'filename': 'log/general.log'
-		}
+		},
+		'console':{
+			'level':'INFO',
+			'class':'logging.StreamHandler',
+			'formatter': 'default'
+		},
 	},
 	'loggers': {
 		'django': {
 			'level': 'INFO',
-			'handlers': ['file'],
+			'handlers': ['console'],
 			'propagate': True,
 		}
 	}
 }
 
 CRONJOBS = [
-    ('* * * * *', 'review.cron.build_restaurant_resource'),
+	('* * * * *', 'review.cron.build_restaurant_resource'),
 ]
 
 DATE_INPUT_FORMATS = ['%Y-%m-%d']

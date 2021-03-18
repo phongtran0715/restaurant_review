@@ -15,14 +15,15 @@ def build_restaurant_resource():
 	end_date = Review.objects.aggregate(Max('created_date'))['created_date__max']
 	start_date = Review.objects.aggregate(Min('created_date'))['created_date__min']
 	for year in range(start_date.year, end_date.year + 1):
+		print("Processing year : {}".format(year))
 		# calculate score in this YEAR
 		update_score_by_period(datetime.date(year, 1, 1), 'year')
 			
 		# calculate score each QUATER in year
-		for quater in range(1,5):
-			update_score_by_period(datetime.date(year, quater, 1), 'quater')
+		for quarter in range(1,5):
+			update_score_by_period(datetime.date(year, quarter, 1), 'quarter')
 
-		# calculate scrore each MONTH in year
+		# # calculate scrore each MONTH in year
 		for month in range(1,13):
 			update_score_by_period(datetime.date(year, month, 1), 'month')
 	print("End cron job : {}".format(datetime.datetime.now()))
@@ -35,20 +36,20 @@ def update_score_by_period(period_value, period_type=None):
 		sql_query += " WHERE YEAR(created_date) = {} ".format(period_value.year)
 	elif period_type == 'month':
 		sql_query += " WHERE YEAR(created_date) = {} AND MONTH(created_date) = {}".format(period_value.year, period_value.month)
-	elif period_type == 'quater':
-		quater_value = period_value.month
-		quater_list = (1,2,3,4)
-		if quater_value == 1:
-			quater_list = (1,2,3)
-		elif quater_value == 2:
-			quater_list = (4,5,6)
-		elif quater_value == 3:
-			quater_list = (7,8,9)
-		elif quater_value == 4:
-			quater_list = (10,11,12)
+	elif period_type == 'quarter':
+		quarter_value = period_value.month
+		quarter_list = (1,2,3,4)
+		if quarter_value == 1:
+			quarter_list = (1,2,3)
+		elif quarter_value == 2:
+			quarter_list = (4,5,6)
+		elif quarter_value == 3:
+			quarter_list = (7,8,9)
+		elif quarter_value == 4:
+			quarter_list = (10,11,12)
 
-		sql_query += """ WHERE YEAR(created_date) = {} AND MONTH(created_date) = {} 
-		AND MONTH(created_date) = {} AND MONTH(created_date) = {} """.format(period_value.year, quater_list[0], quater_list[1], quater_list[2])
+		sql_query += """ WHERE YEAR(created_date) = {} AND (MONTH(created_date) = {} 
+		OR MONTH(created_date) = {} OR MONTH(created_date) = {}) """.format(period_value.year, quarter_list[0], quarter_list[1], quarter_list[2])
 	
 	sql_query += " GROUP BY res_item_id ORDER BY review_num DESC;"
 
@@ -62,20 +63,35 @@ def update_score_by_period(period_value, period_type=None):
 		accuracey = round((item.review_num / max_review) *100, 2)
 		final_score = round(weight_score * accuracey / 100, 8)
 		if period_type == 'month':
-			obj, created = ScoreMonth.objects.filter(Q(res_id=item.res_item_id), Q(period=datetime.date(period_value.year, period_value.month, 1))).get_or_create(res_id=item.res_item_id, accuracey=accuracey, final_score=final_score, period=datetime.date(period_value.year, period_value.month, 1))
-			if created == False:
-				obj = ScoreMonth(res_id=item.res_item_id, accuracey=accuracey, final_score=final_score, period=datetime.date(period_value.year, period_value.month, 1))
-				obj.save()
-		elif period_type == 'quater':
-			obj, created = ScoreQuarter.objects.filter(Q(res_id=item.res_item_id), Q(period=datetime.date(period_value.year, period_value.month, 1))).get_or_create(res_id=item.res_item_id, accuracey=accuracey, final_score=final_score, period=datetime.date(period_value.year, period_value.month, 1))
-			if created == False:
-				obj = ScoreQuarter(res_id=item.res_item_id, accuracey=accuracey, final_score=final_score, period=datetime.date(period_value.year, period_value.month, 1))
-				obj.save()
+			ScoreMonth.objects.update_or_create(res_id=item.res_item_id, period=datetime.date(period_value.year, period_value.month, 1),
+				defaults={
+					'res_id':item.res_item_id,
+					'review_count' : item.review_num,
+					'accuracey':accuracey,
+					'weight_score':weight_score,
+					'final_score':final_score,
+					'period':datetime.date(period_value.year, period_value.month, 1)
+				},)
+		elif period_type == 'quarter':
+			ScoreQuarter.objects.update_or_create(res_id=item.res_item_id, period=datetime.date(period_value.year, period_value.month, 1),
+				defaults={
+					'res_id':item.res_item_id,
+					'review_count' : item.review_num,
+					'accuracey':accuracey,
+					'weight_score':weight_score,
+					'final_score':final_score,
+					'period':datetime.date(period_value.year, period_value.month, 1)
+				},)
 		elif period_type == 'year':
-			obj, created = ScoreYear.objects.filter(Q(res_id=item.res_item_id), Q(period=datetime.date(period_value.year, 1, 1))).get_or_create(res_id=item.res_item_id, accuracey=accuracey, final_score=final_score, period=datetime.date(period_value.year, 1, 1))
-			if created == False:
-				obj = ScoreYear(res_id=item.res_item_id, accuracey=accuracey, final_score=final_score, period=datetime.date(period_value.year, 1, 1))
-				obj.save()
+			ScoreYear.objects.update_or_create(res_id=item.res_item_id, period=datetime.date(period_value.year, period_value.month, 1),
+				defaults={
+					'res_id':item.res_item_id,
+					'review_count' : item.review_num,
+					'accuracey':accuracey,
+					'weight_score':weight_score,
+					'final_score':final_score,
+					'period':datetime.date(period_value.year, period_value.month, 1)
+				},)
 
 def calculate_weight_score_view(res_id, period_value, period_type):
 	data = []
@@ -84,23 +100,22 @@ def calculate_weight_score_view(res_id, period_value, period_type):
 		sql_query += " AND YEAR(created_date) = {} ".format(period_value.year)
 	elif period_type == 'month':
 		sql_query += " AND YEAR(created_date) = {} AND MONTH(created_date) = {} ".format(period_value.year, period_value.month)
-	elif period_type == 'quater':
-		quater_value = period_value.month
-		quater_list = (1,2,3,4)
-		if quater_value == 1:
-			quater_list = (1,2,3)
-		elif quater_value == 2:
-			quater_list = (4,5,6)
-		elif quater_value == 3:
-			quater_list = (7,8,9)
-		elif quater_value == 4:
-			quater_list = (10,11,12)
+	elif period_type == 'quarter':
+		quarter_value = period_value.month
+		quarter_list = (1,2,3,4)
+		if quarter_value == 1:
+			quarter_list = (1,2,3)
+		elif quarter_value == 2:
+			quarter_list = (4,5,6)
+		elif quarter_value == 3:
+			quarter_list = (7,8,9)
+		elif quarter_value == 4:
+			quarter_list = (10,11,12)
 
-		sql_query += """ AND YEAR(created_date) = {} AND MONTH(created_date) = {} 
-		AND MONTH(created_date) = {} AND MONTH(created_date) = {} """.format(period_value.year, quater_list[0], quater_list[1], quater_list[2])
+		sql_query += """ AND YEAR(created_date) = {} AND ( MONTH(created_date) = {} 
+		OR MONTH(created_date) = {} OR MONTH(created_date) = {}) """.format(period_value.year, quarter_list[0], quarter_list[1], quarter_list[2])
 
 	sql_query += " AND (source = 'google' OR source = 'facebook' OR source = 'opentable' OR source = 'tripadvisor' OR source = 'ubereats');"
-	print("sql_query : {}".format(sql_query))
 
 	review_obj = Review.objects.raw(sql_query)
 	for w_score in weight_scores:

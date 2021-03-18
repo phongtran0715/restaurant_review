@@ -10,6 +10,7 @@ import pandas as pd
 from rest_framework_swagger.renderers import OpenAPIRenderer, SwaggerUIRenderer
 from django.db.models import Q, Max, Sum
 from restaurant.models import Restaurant
+from review.models import ScoreMonth, ScoreQuarter, ScoreYear
 from django.core.paginator import (Paginator, EmptyPage,
 	PageNotAnInteger, InvalidPage)
 
@@ -232,6 +233,81 @@ def api_get_all_restaurant_score(request, **kwargs):
 						"final_score" : final_score,
 						"date_from" : date_from,
 						"date_to" : date_to
+					}
+					content.append(data)
+				response['data'] = content
+
+			return Response(response, status=status.HTTP_200_OK)
+		except Review.DoesNotExist:
+			response = {
+				"message": "Not found review data"
+			}
+			return Response(response, status=status.HTTP_404_NOT_FOUND)
+		except PageNotAnInteger:
+			response['data'] = paginator.page(1)
+		except EmptyPage:
+			response['data'] = paginator.page(paginator.num_pages)
+		except InvalidPage:
+			response = {
+				"message": "Invalid page"
+			}
+			return Response(response, status=status.HTTP_404_NOT_FOUND)
+	else:
+		return Response(status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['POST'])
+def api_get_all_restaurant_score_period(request, **kwargs):
+	first_time = datetime.datetime.now()
+	if request.method == 'POST':
+		try:
+			period_type = None
+			period = None
+			page = 1
+			if "period_type" in request.data:
+				period_type = request.data["period_type"]
+			if "period" in request.data:
+				period = request.data["period"]
+			if "page" in request.data:
+				page = request.data["page"]
+
+			restaurants = None
+			if period_type == 'month':
+				sql_query = "SELECT * FROM scores_month WHERE period = '{}' ORDER BY final_score DESC".format(datetime.date(int(period.split("-")[0]), int(period.split("-")[1]), 1))
+				restaurants = ScoreMonth.objects.raw(sql_query)
+			elif period_type == 'quarter':
+				sql_query = "SELECT * FROM scores_quarter WHERE period = '{}' ORDER BY final_score DESC".format(datetime.date(int(period.split("-")[0]), int(period.split("-")[1]), 1))
+				restaurants = ScoreQuarter.objects.raw(sql_query)
+			elif period_type == 'year':
+				sql_query = "SELECT * FROM scores_year WHERE period = '{}' ORDER BY final_score DESC".format(datetime.date(int(period), 1, 1))
+				restaurants = ScoreYear.objects.raw(sql_query)
+
+			print("sql query: {}".format(sql_query))
+			if restaurants is None or len(list(restaurants)) <= 0:
+				response = {
+					"message": "Not found review data"
+				}
+				return Response(response, status=status.HTTP_404_NOT_FOUND)
+
+			response = {}
+			content = []
+			paginator = Paginator(restaurants, 20)
+			response['total_record'] = paginator.count
+			response['page'] = page
+			response['total_page'] = paginator.num_pages
+			response['page_size'] = 20
+
+			if page > paginator.num_pages or page <= 0:
+				response['data'] = []
+			else:
+				page_data = paginator.page(page)
+				for item in page_data:
+					data = {
+						"restaurant_id" : item.res_id,
+						"review_number" : item.review_count,
+						"accuracey" : item.accuracey,
+						"weighted_score" : item.weight_score,
+						"final_score" : item.final_score,
+						"period" : period,
 					}
 					content.append(data)
 				response['data'] = content

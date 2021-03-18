@@ -25,10 +25,11 @@ class Review(models.Model):
 
 class ScoreMonth(models.Model):
 	res_id = models.IntegerField(default=0, blank=False,db_index=True)
+	review_count = models.IntegerField(blank=True, default=0)
 	accuracey = models.IntegerField(default=0, blank=False)
+	weight_score = models.FloatField(default=0.0, blank=False)
 	final_score = models.FloatField(default=0.0, blank=False)
 	period = models.DateField(blank=True, null=True, db_index=True)
-	period_type = models.TextField(blank=True, null=True)
 
 	def __str__(self):
 		return self.res_id
@@ -39,10 +40,11 @@ class ScoreMonth(models.Model):
 
 class ScoreQuarter(models.Model):
 	res_id = models.IntegerField(default=0, blank=False,db_index=True)
+	review_count = models.IntegerField(blank=True, default=0)
 	accuracey = models.IntegerField(default=0, blank=False)
+	weight_score = models.FloatField(default=0.0, blank=False)
 	final_score = models.FloatField(default=0.0, blank=False)
 	period = models.DateField(blank=True, null=True, db_index=True)
-	period_type = models.TextField(blank=True, null=True)
 
 	def __str__(self):
 		return self.res_id
@@ -53,10 +55,11 @@ class ScoreQuarter(models.Model):
 
 class ScoreYear(models.Model):
 	res_id = models.IntegerField(default=0, blank=False,db_index=True)
+	review_count = models.IntegerField(blank=True, default=0)
 	accuracey = models.IntegerField(default=0, blank=False)
+	weight_score = models.FloatField(default=0.0, blank=False)
 	final_score = models.FloatField(default=0.0, blank=False)
 	period = models.DateField(blank=True, null=True, db_index=True)
-	period_type = models.TextField(blank=True, null=True)
 
 	def __str__(self):
 		return self.res_id

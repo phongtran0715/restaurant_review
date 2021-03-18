@@ -3,8 +3,8 @@ import requests
 from datetime import datetime
 
 
-API_ENDPOINT="http://54.252.173.242:8000/api/review/new/"
-# API_ENDPOINT="http://127.0.0.1:8000/api/review/new/"
+# API_ENDPOINT="http://54.252.173.242:8000/api/review/new/"
+API_ENDPOINT="http://127.0.0.1:8000/api/review/new/"
 file_path="/home/jack/Downloads/Document/restaurant/reviews_dump.json"
 
 '''
