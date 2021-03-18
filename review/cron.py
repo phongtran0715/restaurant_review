@@ -122,8 +122,9 @@ def calculate_weight_score_view(res_id, period_value, period_type):
 		frame_data = [0,0,0,0,0,0,0,0,0]
 		for review in review_obj:
 			if review.weight_score == w_score:
-				index = rating_points.index(review.rating)
-				frame_data[index] += 1
+				if review.rating in rating_points:
+					index = rating_points.index(review.rating)
+					frame_data[index] += 1
 		data.append(frame_data)
 
 	df = pd.DataFrame(data,columns=rating_points)
