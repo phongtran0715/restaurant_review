@@ -51,6 +51,7 @@ INSTALLED_APPS = [
 	'restaurant',
 	'rest_framework_swagger',
 	'django_crontab',
+	'email_scrape',
 ]
 
 MIDDLEWARE = [
@@ -154,6 +155,7 @@ LOGGING = {
 
 CRONJOBS = [
 	('* * * * *', 'review.cron.build_restaurant_resource'),
+	('* * * * *', 'email_scrape.cron.fetch_inbox_mail'),
 ]
 
 DATE_INPUT_FORMATS = ['%Y-%m-%d']
