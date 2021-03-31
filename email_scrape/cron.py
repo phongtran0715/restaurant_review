@@ -3,40 +3,50 @@ import environ
 import email.utils
 from email_scrape.outlook import Outlook
 from email_scrape.models import Email
+from django.conf import settings
+import logging
 
+logger = logging.getLogger(__name__)
 
-env = environ.Env(
-	DEBUG=(bool, False)
-)
-environ.Env.read_env()
+def format_mail_from(mail_from):
+	if "<" in mail_from:
+		mail_from = mail_from.split("<")[1]
+
+	if ">" in mail_from:
+		mail_from = mail_from.split(">")[0]
+
+	return mail_from.strip()
 
 def fetch_inbox_mail():
+	logger.info("Start to scrape email")
 	mail = Outlook()
-	mail.login(env('FETCH_EMAIL'),env('FETCH_EMAIL_PASSWORD'))
+	mail.login(settings.FETCH_EMAIL, settings.FETCH_EMAIL_PASSWORD)
 	mail.select('Inbox')
-	all_ids = mail.allIds(startDate)
+	all_ids = mail.allIds()
 	# all_ids = mail.unreadIds(startDate)
 
 	if len(all_ids) == 1 and all_ids[0] == '':
-		print("Not found any new email")
+		logger.warning("Not found any new email")
 		return
 
-	print("Number of email : %d" % len(all_ids))
+	logger.info("Number of email : %d" % len(all_ids))
 
 	for item in all_ids:
 		if item is None or item == '':
 			continue
-		try:
-			mail.getEmail(item)
-			mail_date = mail.maildate()
-			mail_date= email.utils.parsedate(date)
-			mail_date= time.strftime('%Y-%m-%d', date[:9])
-			email_item = Email.objects.create(email_id=item, subject=mail.mailsubject(),
-				email_from=mail.mailfrom(), email_body=mail.get_decoded_email_html_body(),
-				email_date=mail_date)
-			email_item.save()
-		except Exception as e:
-			print("Error when process email : " + item)
-			print(e)
+		mail.getEmail(item)
+		mail_date=email.utils.parsedate(mail.maildate())
+		mail_date=time.strftime('%Y-%m-%d %H:%M:%S', mail_date)
+		
+		mail_from = format_mail_from(mail.mailfrom())
+
+		email_item = Email.objects.update_or_create(email_id=item,
+			defaults={
+				'email_id':item, 'subject':mail.mailsubject(),
+				'email_from':mail_from, 'email_body':mail.get_decoded_email_body(),
+				'email_date':mail_date
+			})
+		logger.info("Id : {} - From : {} - Subject : {}\n".format(item, mail_from, mail.mailsubject()))
 		time.sleep(1)
+	logger.info("Finish to scrape email")
 

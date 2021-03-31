@@ -136,7 +136,7 @@ LOGGING = {
 			'level': 'INFO',
 			'class': 'logging.FileHandler',
 			'formatter': 'default',
-			'filename': 'log/general.log'
+			'filename': os.path.join(BASE_DIR, 'log/general.log')
 		},
 		'console':{
 			'level':'INFO',
@@ -154,12 +154,14 @@ LOGGING = {
 }
 
 CRONJOBS = [
-	('* * * * *', 'review.cron.build_restaurant_resource'),
-	('* * * * *', 'email_scrape.cron.fetch_inbox_mail'),
+	('0 0 * * *', 'review.cron.build_restaurant_resource', 
+		' >> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/restaurant_calculation_job.log'))),
+	('0 0 * * *', 'email_scrape.cron.fetch_inbox_mail', 
+		'>> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/email_scrape_job.log'))),
 ]
+CRONTAB_LOCK_JOBS = True
 
 DATE_INPUT_FORMATS = ['%Y-%m-%d']
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
@@ -172,7 +174,7 @@ USE_I18N = True
 
 USE_L10N = True
 
-USE_TZ = True
+USE_TZ = False
 
 
 # Static files (CSS, JavaScript, Images)
@@ -182,3 +184,7 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 VENV_PATH = os.path.dirname(BASE_DIR)
 STATIC_ROOT = os.path.join(VENV_PATH, 'static_root')
+
+# User settings
+FETCH_EMAIL = env('FETCH_EMAIL')
+FETCH_EMAIL_PASSWORD = env('FETCH_EMAIL_PASSWORD')

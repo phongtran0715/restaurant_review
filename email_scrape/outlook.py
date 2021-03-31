@@ -5,6 +5,7 @@ import datetime
 import email.mime.multipart
 import base64
 import quopri
+import logging
 
 IMAP_SERVER = "imap.gmail.com"
 IMAP_PORT = 993
@@ -12,11 +13,10 @@ IMAP_PORT = 993
 SMTP_SERVER= "smtp.gmail.com"
 SMTP_PORT = 587
 
+logger = logging.getLogger(__name__)
 class Outlook():
 	def __init__(self):
 		pass
-		# self.imap = imaplib.IMAP4_SSL('imap-mail.outlook.com')
-		# self.smtp = smtplib.SMTP('smtp-mail.outlook.com')
 
 	def login(self, username, password):
 		self.username = username
@@ -27,10 +27,10 @@ class Outlook():
 				self.imap = imaplib.IMAP4_SSL(IMAP_SERVER,IMAP_PORT)
 				r, d = self.imap.login(username, password)
 				assert r == 'OK', 'login failed: %s' % str (r)
-				print("> Signed in as %s" % self.username, d)
+				logger.info("> Signed in as %s" % self.username, d)
 				return
 			except Exception as err:
-				print(" > Sign in error: %s" % str(err))
+				logger.error(" > Sign in error: %s" % str(err))
 				login_attempts = login_attempts + 1
 				if login_attempts < 3:
 					continue
@@ -50,9 +50,9 @@ class Outlook():
 			self.smtp.starttls()
 			self.smtp.login(self.username, self.password)
 			self.smtp.sendmail(msg['from'], [msg['to']], msg.as_string())
-			print("   email replied")
+			logger.info("     email replied")
 		except smtplib.SMTPException:
-			print("Error: unable to send email")
+			logger.error("Error: unable to send email")
 
 	def sendEmail(self, recipient, subject, message):
 		headers = "\r\n".join([
@@ -71,10 +71,10 @@ class Outlook():
 				self.smtp.starttls()
 				self.smtp.login(self.username, self.password)
 				self.smtp.sendmail(self.username, recipient, content)
-				print("   email sent.")
+				logger.info("     email sent.")
 				return
 			except Exception as err:
-				print("   Sending email failed: %s" % str(err))
+				logger.error("     Sending email failed: %s" % str(err))
 				attempts = attempts + 1
 				if attempts < 3:
 					continue
@@ -160,7 +160,7 @@ class Outlook():
 	def getEmail(self, id):
 		r, d = self.imap.fetch(id, "(RFC822)")
 		self.raw_email = d[0][1]
-		self.email_message = email.message_from_string(self.raw_email.decode('utf-8'))
+		self.email_message = email.message_from_bytes(self.raw_email)
 		return self.email_message
 
 	def unread(self):
@@ -250,7 +250,41 @@ class Outlook():
 		if msg.is_multipart():
 			for part in msg.get_payload():
 				if part.get_content_type() == 'text/html':
-					html=base64.urlsafe_b64decode(part.get_payload()).decode('utf-8')
+					html=base64.urlsafe_b64decode(part.get_payload()).decode('utf-8', errors='ignore')
 		else:
-			html=base64.urlsafe_b64decode(part.get_payload()).decode('utf-8')
+			html=base64.urlsafe_b64decode(msg.get_payload()).decode('utf-8', errors='ignore')
 		return html
+	
+	def get_decoded_email_body(self):
+		""" Decode email body.
+		Detect character set if the header is not set.
+		We try to get text/plain, but if there is not one then fallback to text/html.
+		:param message_body: Raw 7-bit message body input e.g. from imaplib. Double encoded in quoted-printable and latin-1
+		:return: Message body as unicode string
+		"""
+
+		msg = email.message_from_bytes(self.raw_email)
+
+		text = ""
+		if msg.is_multipart():
+			html = ""
+			for part in msg.get_payload():
+				print("%s, %s" % (part.get_content_type(), part.get_content_charset()))
+				if part.get_content_charset() is None:
+					# We cannot know the character set, so return decoded "something"
+					text = part.get_payload(decode=True)
+					continue
+				charset = part.get_content_charset()
+				
+				if part.get_content_type() == 'text/plain':
+					text = str(part.get_payload(decode=True), str(charset), "ignore").encode('utf8', 'replace')
+				
+				if part.get_content_type() == 'text/html':
+					html = str(part.get_payload(decode=True), str(charset), "ignore").encode('utf8', 'replace')
+			if text is not None:
+				return text.strip()
+			else:
+				return html.strip()
+		else:
+			text = str(msg.get_payload(decode=True), msg.get_content_charset(), 'ignore').encode('utf8', 'replace')
+		return text.strip()
