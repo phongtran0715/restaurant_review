@@ -65,3 +65,44 @@ def get_email_view(request, **kwargs):
 			return Response(response, status=status.HTTP_404_NOT_FOUND)
 	else:
 		return Response(status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+def get_sender_view(request, **kwargs):
+	if request.method == 'GET':
+		page = request.data.get('page', 1)
+		try:
+			response = {}
+			content = []
+			email_data = Email.objects.values('email_from').distinct()
+			paginator = Paginator(email_data, 30)
+			response['total_record'] = paginator.count
+			response['page'] = page
+			response['total_page'] = paginator.num_pages
+			response['page_size'] = 30
+			if page > paginator.num_pages or page <= 0:
+				response['data'] = []
+			else:
+				page_data = paginator.page(page)
+				for item in page_data:
+					serializer = EmailSerializer(item)
+					content.append(serializer.data['email_from'])
+				response['data'] = content
+			return Response(response, status=status.HTTP_200_OK)
+		except Email.DoesNotExist:
+			response = {
+				"message": "Not found email data"
+			}
+			return Response(response, status=status.HTTP_404_NOT_FOUND)
+		except PageNotAnInteger:
+			response['data'] = paginator.page(1)
+			return Response(response, status=status.HTTP_404_NOT_FOUND)
+		except EmptyPage:
+			response['data'] = paginator.page(paginator.num_pages)
+			return Response(response, status=status.HTTP_404_NOT_FOUND)
+		except InvalidPage:
+			response = {
+				"message": "Invalid page"
+			}
+			return Response(response, status=status.HTTP_404_NOT_FOUND)
+	else:
+		return Response(status=status.HTTP_400_BAD_REQUEST)		
