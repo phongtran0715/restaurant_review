@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from models import Email
+from email_scrape.models import Email
 
 
 class EmailSerializer(serializers.ModelSerializer):

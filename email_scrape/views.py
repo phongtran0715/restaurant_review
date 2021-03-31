@@ -1,3 +1,67 @@
 from django.shortcuts import render
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from django.core.paginator import (Paginator, EmptyPage,
+	PageNotAnInteger, InvalidPage)
+from email_scrape.models import Email
+from email_scrape.serializers import EmailSerializer
+import logging, json
 
-# Create your views here.
+
+logger = logging.getLogger(__name__)
+
+@api_view(['GET'])
+def get_email_view(request, **kwargs):
+	if request.method == 'GET':
+		email_subject = request.GET.get('subject')
+		email_from = request.GET.get('email_from')
+		date_from = request.GET.get('date_from')
+		date_to = request.GET.get('date_to')
+		
+		page = request.data.get('page', 1)
+		try:
+			response = {}
+			content = []
+			email_data = Email.objects.filter()
+			if email_subject is not None:
+				email_data = email_data.filter(subject__icontains=email_subject)
+			if email_from is not None:
+				email_data = email_data.filter(email_from__exact=email_from)
+			if date_from is not None:
+				email_data = email_data.filter(email_date__gte=date_from)
+			if date_to is not None:
+				email_data = email_data.filter(email_date__lte=date_to)
+
+			paginator = Paginator(email_data, 30)
+			response['total_record'] = paginator.count
+			response['page'] = page
+			response['total_page'] = paginator.num_pages
+			response['page_size'] = 30
+			if page > paginator.num_pages or page <= 0:
+				response['data'] = []
+			else:
+				page_data = paginator.page(page)
+				for item in page_data:
+					serializer = EmailSerializer(item)
+					content.append(serializer.data)
+				response['data'] = content
+			return Response(response, status=status.HTTP_200_OK)
+		except Email.DoesNotExist:
+			response = {
+				"message": "Not found email data"
+			}
+			return Response(response, status=status.HTTP_404_NOT_FOUND)
+		except PageNotAnInteger:
+			response['data'] = paginator.page(1)
+			return Response(response, status=status.HTTP_404_NOT_FOUND)
+		except EmptyPage:
+			response['data'] = paginator.page(paginator.num_pages)
+			return Response(response, status=status.HTTP_404_NOT_FOUND)
+		except InvalidPage:
+			response = {
+				"message": "Invalid page"
+			}
+			return Response(response, status=status.HTTP_404_NOT_FOUND)
+	else:
+		return Response(status=status.HTTP_400_BAD_REQUEST)
