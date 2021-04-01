@@ -25,5 +25,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('review.urls')),
     path('api/', include('email_scrape.urls')),
+    path('api/', include('google_map.urls')),
     path('api/docs/', schema_view, name='api-doc'),
 ]

@@ -52,6 +52,7 @@ INSTALLED_APPS = [
 	'rest_framework_swagger',
 	'django_crontab',
 	'email_scrape',
+	'google_map',
 ]
 
 MIDDLEWARE = [
@@ -188,3 +189,5 @@ STATIC_ROOT = os.path.join(VENV_PATH, 'static_root')
 # User settings
 FETCH_EMAIL = env('FETCH_EMAIL')
 FETCH_EMAIL_PASSWORD = env('FETCH_EMAIL_PASSWORD')
+
+SECRET_API_KEY_FROM_OUTSCRAPER = env('SECRET_API_KEY_FROM_OUTSCRAPER')
