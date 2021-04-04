@@ -6,6 +6,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
 import time
+import lxml.html
 
 
 class WebDriver:
@@ -14,7 +15,7 @@ class WebDriver:
 
 	def __init__(self):
 		self.options = Options()
-		# self.options.add_argument("--headless")
+		self.options.add_argument("--headless")
 		self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=self.options)
 
 		self.location_data["rating"] = "NA"
@@ -26,14 +27,28 @@ class WebDriver:
 		self.location_data["Reviews"] = []
 		self.location_data["Popular Times"] = {"Monday":[], "Tuesday":[], "Wednesday":[], "Thursday":[], "Friday":[], "Saturday":[], "Sunday":[]}
 
-	def get_all_location_link(self):
+	def get_all_location_link(self, searchUrl):
 		links = []
-		elems = self.driver.find_elements_by_class_name("place-result-container-place-link")
+		categories = []
+		locations_name = []
+		self.driver.get(searchUrl)
+		WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "section-layout-root")))
+		elems = self.driver.find_elements_by_class_name("place-result-container-place-link")		
 		if elems is not None:
 			links = [elem.get_attribute('href') for elem in elems]
-			return links
-		else:
-			return None
+			locations_name = [elem.get_attribute('aria-label') for elem in elems]
+
+		# elems = self.driver.find_elements_by_class_name("rs9iHBFJiiu__container")
+		# if elems is not None:
+		# 	num_reviews = [elem.get_attribute('aria-label') for elem in elems]
+		# 	print("num review : {}".format(num_reviews))
+
+		elems = self.driver.find_elements_by_xpath("//div[@class='tYZdQJV9xeh__content']/div[@class='tYZdQJV9xeh__text-content gm2-body-2']/div[@class='tYZdQJV9xeh__info-line'][2]/div[@class='tYZdQJV9xeh__info-line'][1]/span[1]/jsl/span[2]")		
+		if elems is not None:
+			categories = [elem.text for elem in elems]
+			print("categories: {}".format(categories))
+
+		return links, locations_name, categories
 
 	def click_open_close_time(self):
 
@@ -56,7 +71,12 @@ class WebDriver:
 		return True
 
 	def get_location_data(self):
-
+		location_data = {}
+		location_data["rating"] = 'NA'
+		location_data["reviews_count"] = 'NA'
+		location_data["location"] = 'NA'
+		location_data["contact"] = 'NA'
+		location_data["website"] = 'NA'
 		try:
 			avg_rating = self.driver.find_element_by_class_name("section-star-display")
 			total_reviews = self.driver.find_element_by_class_name("section-rating-term")
@@ -66,11 +86,11 @@ class WebDriver:
 		except:
 			pass
 		try:
-			self.location_data["rating"] = avg_rating.text
-			self.location_data["reviews_count"] = total_reviews.text[1:-1]
-			self.location_data["location"] = address.text
-			self.location_data["contact"] = phone_number.text
-			self.location_data["website"] = website.text
+			location_data["rating"] = avg_rating.text
+			location_data["reviews_count"] = total_reviews.text[1:-1]
+			location_data["location"] = address.text
+			location_data["contact"] = phone_number.text
+			location_data["website"] = website.text
 		except:
 			pass
 
@@ -161,34 +181,11 @@ class WebDriver:
 			pass
 
 	def scrape(self, url):
-		# TODO : get all link
 		self.driver.get(url)
-		time.sleep(10)
-		# self.scroll_the_page()
-		self.driver.execute_script("window.scrollBy(0, 100)")
-		self.driver.execute_script("window.scrollBy(0, 100)")
-		self.driver.execute_script("window.scrollBy(0, 100)")
-		self.driver.execute_script("window.scrollBy(0, 100)")
-		time.sleep(10)
-
-		links = self.get_all_location_link()
-		if links is not None:
-			print("link count : {}".format(len(links)))
-			for link in links:
-				print(link)
-		else:
-			print("Not found any link")
-		# try:
-			
-		# except Exception as e:
-		# 	self.driver.quit()
-		# 	return
-		# time.sleep(10)
-		# self.driver.get(url)
-		# time.sleep(10)
+		WebDriverWait(self.driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "section-layout-root")))
 
 		# self.click_open_close_time()
-		# self.get_location_data()
+		self.get_location_data()
 		# self.get_location_open_close_time()
 		# self.get_popular_times()
 		# if(self.click_all_reviews_button()==False):
@@ -198,6 +195,6 @@ class WebDriver:
 		# self.scroll_the_page()
 		# self.expand_all_reviews()
 		# self.get_reviews_data()
-		# self.driver.quit()
+		self.driver.quit()
 
 		return(self.location_data)
