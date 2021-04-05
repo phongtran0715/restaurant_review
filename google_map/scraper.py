@@ -16,6 +16,7 @@ class WebDriver:
 	def __init__(self):
 		self.options = Options()
 		self.options.add_argument("--headless")
+		self.options.add_argument("--remote-debugging-port=9222")
 		self.driver = webdriver.Chrome(ChromeDriverManager().install(), options=self.options)
 
 		self.location_data["rating"] = "NA"
