@@ -39,11 +39,14 @@ def fetch_inbox_mail():
 		mail_date=time.strftime('%Y-%m-%d %H:%M:%S', mail_date)
 		
 		mail_from = format_mail_from(mail.mailfrom())
+		text, html = mail.get_decoded_email_body()
 
 		email_item = Email.objects.update_or_create(email_id=item,
 			defaults={
 				'email_id':item, 'subject':mail.mailsubject(),
-				'email_from':mail_from, 'email_body':mail.get_decoded_email_body(),
+				'email_from':mail_from,
+				'email_body_text':text,
+				'email_body_html' : html,
 				'email_date':mail_date
 			})
 		logger.info("Id : {} - From : {} - Subject : {}\n".format(item, mail_from, mail.mailsubject()))

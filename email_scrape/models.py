@@ -7,7 +7,8 @@ class Email(models.Model):
 	subject = models.CharField(max_length=4096, blank=True)
 	email_from = models.EmailField(max_length=254, blank=True, db_index=True)
 	email_date = models.DateTimeField(blank=True, db_index=True)
-	email_body = models.TextField(max_length=40960, blank=True)
+	email_body_text = models.TextField(max_length=40960, blank=True)
+	email_body_html = models.TextField(max_length=40960, blank=True)
 
 	def __str__(self):
 		return self.email_from + " - " + self.subject

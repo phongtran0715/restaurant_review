@@ -14,6 +14,7 @@ SMTP_SERVER= "smtp.gmail.com"
 SMTP_PORT = 587
 
 logger = logging.getLogger(__name__)
+
 class Outlook():
 	def __init__(self):
 		pass
@@ -27,10 +28,10 @@ class Outlook():
 				self.imap = imaplib.IMAP4_SSL(IMAP_SERVER,IMAP_PORT)
 				r, d = self.imap.login(username, password)
 				assert r == 'OK', 'login failed: %s' % str (r)
-				logger.info("> Signed in as %s" % self.username, d)
+				print("> Signed in as %s" % self.username, d)
 				return
 			except Exception as err:
-				logger.error(" > Sign in error: %s" % str(err))
+				print(" > Sign in error: %s" % str(err))
 				login_attempts = login_attempts + 1
 				if login_attempts < 3:
 					continue
@@ -50,9 +51,9 @@ class Outlook():
 			self.smtp.starttls()
 			self.smtp.login(self.username, self.password)
 			self.smtp.sendmail(msg['from'], [msg['to']], msg.as_string())
-			logger.info("     email replied")
+			print("     email replied")
 		except smtplib.SMTPException:
-			logger.error("Error: unable to send email")
+			print("Error: unable to send email")
 
 	def sendEmail(self, recipient, subject, message):
 		headers = "\r\n".join([
@@ -71,10 +72,10 @@ class Outlook():
 				self.smtp.starttls()
 				self.smtp.login(self.username, self.password)
 				self.smtp.sendmail(self.username, recipient, content)
-				logger.info("     email sent.")
+				print("     email sent.")
 				return
 			except Exception as err:
-				logger.error("     Sending email failed: %s" % str(err))
+				print("     Sending email failed: %s" % str(err))
 				attempts = attempts + 1
 				if attempts < 3:
 					continue
@@ -160,7 +161,7 @@ class Outlook():
 	def getEmail(self, id):
 		r, d = self.imap.fetch(id, "(RFC822)")
 		self.raw_email = d[0][1]
-		self.email_message = email.message_from_bytes(self.raw_email)
+		self.email_message = email.message_from_string(self.raw_email.decode('utf-8', "ignore"))
 		return self.email_message
 
 	def unread(self):
@@ -250,11 +251,11 @@ class Outlook():
 		if msg.is_multipart():
 			for part in msg.get_payload():
 				if part.get_content_type() == 'text/html':
-					html=base64.urlsafe_b64decode(part.get_payload()).decode('utf-8', errors='ignore')
+					html=base64.urlsafe_b64decode(part.get_payload()).decode('utf-8', error="ignore")
 		else:
-			html=base64.urlsafe_b64decode(msg.get_payload()).decode('utf-8', errors='ignore')
+			html=base64.urlsafe_b64decode(msg.get_payload()).decode('utf-8', error="ignore")
 		return html
-	
+
 	def get_decoded_email_body(self):
 		""" Decode email body.
 		Detect character set if the header is not set.
@@ -266,25 +267,31 @@ class Outlook():
 		msg = email.message_from_bytes(self.raw_email)
 
 		text = ""
+		html = ""
 		if msg.is_multipart():
-			html = ""
 			for part in msg.get_payload():
-				print("%s, %s" % (part.get_content_type(), part.get_content_charset()))
+				# print("%s, %s" % (part.get_content_type(), part.get_content_charset()))
 				if part.get_content_charset() is None:
 					# We cannot know the character set, so return decoded "something"
 					text = part.get_payload(decode=True)
 					continue
 				charset = part.get_content_charset()
-				
 				if part.get_content_type() == 'text/plain':
-					text = str(part.get_payload(decode=True), str(charset), "ignore").encode('utf8', 'replace')
-				
+					text = str(part.get_payload(decode=True), str(charset), "ignore").encode('utf-8', 'ignore').decode('utf-8')
 				if part.get_content_type() == 'text/html':
-					html = str(part.get_payload(decode=True), str(charset), "ignore").encode('utf8', 'replace')
+					html = str(part.get_payload(decode=True), str(charset), "ignore").encode('utf-8', 'ignore').decode('utf-8')
 			if text is not None:
-				return text.strip()
+				text=text.strip()
 			else:
-				return html.strip()
+				text=""
+			if html is not None:
+				html=html.strip()
+			else:
+				html=""
 		else:
-			text = str(msg.get_payload(decode=True), msg.get_content_charset(), 'ignore').encode('utf8', 'replace')
-		return text.strip()
+			text = str(msg.get_payload(decode=True), msg.get_content_charset(), 'ignore').encode('utf-8', 'ignore').decode('utf-8')
+			if text is not None:
+				text = text.strip()
+			else:
+				text = ""
+		return text, html
