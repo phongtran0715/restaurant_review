@@ -85,7 +85,11 @@ def get_sender_view(request, **kwargs):
 				page_data = paginator.page(page)
 				for item in page_data:
 					serializer = EmailSerializer(item)
-					content.append(serializer.data['email_from'])
+					num_email = Email.objects.filter(email_from__exact=serializer.data['email_from']).count()
+					content.append({
+						'email_from' : serializer.data['email_from'],
+						'number_email' : num_email
+						})
 				response['data'] = content
 			return Response(response, status=status.HTTP_200_OK)
 		except Email.DoesNotExist:
