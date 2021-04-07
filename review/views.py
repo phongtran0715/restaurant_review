@@ -155,23 +155,22 @@ def api_get_restaurant_score(request, **kwargs):
 		return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 def api_get_all_restaurant_score(request, **kwargs):
-	first_time = datetime.datetime.now()
-	if request.method == 'POST':
+	if request.method == 'GET':
 		try:
 			start_date = None
 			end_date = None
 			page = 1
 			category = None
-			if "start_date" in request.data:
-				start_date = request.data["start_date"]
-			if "end_date" in request.data:
-				end_date = request.data["end_date"]
-			if "page" in request.data:
-				page = request.data["page"]
-			if "category" in request.data:
-				category = request.data["category"]
+			if "start_date" in request.GET:
+				start_date = request.GET["start_date"]
+			if "end_date" in request.GET:
+				end_date = request.GET["end_date"]
+			if "page" in request.GET:
+				page = int(request.GET["page"])
+			if "category" in request.GET:
+				category = request.GET["category"]
 
 			is_and = False
 			sql_query = '''SELECT distinct(res_id_id) as res_item_id, 1 id, count(*) as review_num FROM reviews '''
@@ -195,7 +194,6 @@ def api_get_all_restaurant_score(request, **kwargs):
 					is_and = True
 
 			sql_query += " group by res_item_id order by review_num desc;"
-			# print("query : {}".format(sql_query))
 
 			restaurants = Review.objects.raw(sql_query)
 			if len(list(restaurants)) <= 0:
@@ -255,20 +253,20 @@ def api_get_all_restaurant_score(request, **kwargs):
 	else:
 		return Response(status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['POST'])
+@api_view(['GET'])
 def api_get_all_restaurant_score_period(request, **kwargs):
-	first_time = datetime.datetime.now()
-	if request.method == 'POST':
+	if request.method == 'GET':
 		try:
+			print(request.GET)
 			period_type = None
 			period = None
 			page = 1
-			if "period_type" in request.data:
-				period_type = request.data["period_type"]
-			if "period" in request.data:
-				period = request.data["period"]
-			if "page" in request.data:
-				page = request.data["page"]
+			if "period_type" in request.GET:
+				period_type = request.GET["period_type"]
+			if "period" in request.GET:
+				period = request.GET["period"]
+			if "page" in request.GET:
+				page = int(request.GET["page"])
 
 			restaurants = None
 			if period_type == 'month':

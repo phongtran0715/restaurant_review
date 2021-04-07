@@ -74,7 +74,7 @@ def get_sender_view(request, **kwargs):
 			response = {}
 			content = []
 			# email_data = Email.objects.values('email_from').distinct()
-			email_data = Email.objects.raw('SELECT 1 as id, COUNT(*) AS count, email_from FROM email_scrape GROUP BY email_from ORDER BY count DESC')
+			email_data = Email.objects.raw('SELECT 1 as id, COUNT(*) as count, email_from from email_scrape WHERE YEAR(email_date) = YEAR(CURRENT_TIMESTAMP) group by email_from order by count desc')
 			paginator = Paginator(email_data, 10)
 			response['total_record'] = paginator.count
 			response['page'] = page
