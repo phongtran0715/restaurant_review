@@ -73,22 +73,21 @@ def get_sender_view(request, **kwargs):
 		try:
 			response = {}
 			content = []
-			email_data = Email.objects.values('email_from').distinct()
-			paginator = Paginator(email_data, 30)
+			# email_data = Email.objects.values('email_from').distinct()
+			email_data = Email.objects.raw('SELECT 1 as id, COUNT(*) AS count, email_from FROM email_scrape GROUP BY email_from ORDER BY count DESC')
+			paginator = Paginator(email_data, 10)
 			response['total_record'] = paginator.count
 			response['page'] = page
 			response['total_page'] = paginator.num_pages
-			response['page_size'] = 30
+			response['page_size'] = 10
 			if page > paginator.num_pages or page <= 0:
 				response['data'] = []
 			else:
 				page_data = paginator.page(page)
 				for item in page_data:
-					serializer = EmailSerializer(item)
-					num_email = Email.objects.filter(email_from__exact=serializer.data['email_from']).count()
 					content.append({
-						'email_from' : serializer.data['email_from'],
-						'number_email' : num_email
+						'email_from' : item.email_from,
+						'number_email' : item.count
 						})
 				response['data'] = content
 			return Response(response, status=status.HTTP_200_OK)
