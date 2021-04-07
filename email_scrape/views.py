@@ -33,6 +33,7 @@ def get_email_view(request, **kwargs):
 			if date_to is not None:
 				email_data = email_data.filter(email_date__lte=date_to)
 
+			email_data = email_data.order_by('-email_date')
 			paginator = Paginator(email_data, 30)
 			response['total_record'] = paginator.count
 			response['page'] = page
