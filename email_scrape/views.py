@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 @api_view(['GET'])
 def get_email_view(request, **kwargs):
 	if request.method == 'GET':
+		category = request.GET.get('category')
 		email_subject = request.GET.get('subject')
 		email_from = request.GET.get('email_from')
 		date_from = request.GET.get('date_from')
@@ -32,6 +33,8 @@ def get_email_view(request, **kwargs):
 				email_data = email_data.filter(email_date__gte=date_from)
 			if date_to is not None:
 				email_data = email_data.filter(email_date__lte=date_to)
+			if category is not None:
+				email_data = email_data.filter(category__exact=category)
 
 			email_data = email_data.order_by('-email_date')
 			paginator = Paginator(email_data, 30)

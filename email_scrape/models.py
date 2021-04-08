@@ -9,6 +9,7 @@ class Email(models.Model):
 	email_date = models.DateTimeField(blank=True, db_index=True)
 	email_body_text = models.TextField(max_length=40960, blank=True)
 	email_body_html = models.TextField(max_length=40960, blank=True)
+	category = models.CharField(max_length=512, blank=True)
 
 	def __str__(self):
 		return self.email_from + " - " + self.subject
