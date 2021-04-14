@@ -18,6 +18,7 @@ from pkg_resources import resource_filename
 from contextlib import closing
 import requests
 from django.conf import settings
+import traceback
 
 
 class GoogleSearch:
