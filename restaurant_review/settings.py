@@ -10,7 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.1/ref/settings/
 """
 
-import os
+import os, sys
 from pathlib import Path
 import environ
 
@@ -189,3 +189,9 @@ STATIC_ROOT = os.path.join(VENV_PATH, 'static_root')
 # User settings
 FETCH_EMAIL = env('FETCH_EMAIL')
 FETCH_EMAIL_PASSWORD = env('FETCH_EMAIL_PASSWORD')
+
+
+EXTERNAL_BASE = os.path.join(BASE_DIR, "externals")
+EXTERNAL_LIBS_PATH = os.path.join(EXTERNAL_BASE, "libs")
+EXTERNAL_APPS_PATH = os.path.join(EXTERNAL_BASE, "apps")
+sys.path = ["", EXTERNAL_LIBS_PATH, EXTERNAL_APPS_PATH] + sys.path
