@@ -57,6 +57,7 @@ class GoogleSearch:
 			url = GoogleSearch.SEARCH_URL + "?hl=en&q="+ urllib.quote(query) +("" if start == 0 else ("&start=" + str(start)))
 			response = requests.get(url, headers=headers)
 			soup = BeautifulSoup(response.text,"lxml")
+			print(response.text)
 			if total is None:
 				try:
 					if sys.version_info[0] > 2:
@@ -67,6 +68,7 @@ class GoogleSearch:
 								   re.search("(([0-9]+[', ])*[0-9]+)",
 											 totalText).group(1)))
 				except:
+					traceback.print_exc()
 					total = 0
 
 			selector = GoogleSearch.RESULT_SELECTOR_PAGE1 if i == 0 else GoogleSearch.RESULT_SELECTOR
