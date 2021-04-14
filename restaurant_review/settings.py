@@ -190,6 +190,8 @@ STATIC_ROOT = os.path.join(VENV_PATH, 'static_root')
 FETCH_EMAIL = env('FETCH_EMAIL')
 FETCH_EMAIL_PASSWORD = env('FETCH_EMAIL_PASSWORD')
 
+PROXY_API_KEY = env('PROXY_API_KEY')
+
 
 EXTERNAL_BASE = os.path.join(BASE_DIR, "externals")
 EXTERNAL_LIBS_PATH = os.path.join(EXTERNAL_BASE, "libs")
