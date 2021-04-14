@@ -16,6 +16,7 @@ from random import choice
 from time import sleep
 from pkg_resources import resource_filename
 from contextlib import closing
+import requests
 
 class GoogleSearch:
 	with open(resource_filename('googlesearch', 'browser_agents.txt'), 'r') as file_handle:
@@ -52,13 +53,10 @@ class GoogleSearch:
 			thread_pool = ThreadPool(num_prefetch_threads)
 		for i in range(pages) :
 			start = i * GoogleSearch.RESULTS_PER_PAGE
-			opener = urllib.build_opener()
-			opener.addheaders = GoogleSearch.DEFAULT_HEADERS
-			with closing(opener.open(GoogleSearch.SEARCH_URL +
-							 "?hl=en&q="+ urllib.quote(query) +
-							 ("" if start == 0 else
-							  ("&start=" + str(start))))) as response:
-				soup = BeautifulSoup(response.read(), "lxml")
+			headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36'}
+			url = GoogleSearch.SEARCH_URL + "?hl=en&q="+ urllib.quote(query) +("" if start == 0 else ("&start=" + str(start)))
+			response = requests.get(url, headers=headers)
+			soup = BeautifulSoup(response.text,"lxml")
 			if total is None:
 				try:
 					if sys.version_info[0] > 2:

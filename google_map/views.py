@@ -50,7 +50,7 @@ def api_search_google_search_view(request, *kwargs):
 			data.append({
 				'title' : result.title,
 				'url' : result.url,
-				'content' : result.get_text().strip()
+				# 'content' : result.get_text().strip()
 				})
 		response['data'] = data
 		return Response(response, status=status.HTTP_200_OK)
