@@ -19,6 +19,12 @@ from contextlib import closing
 import requests
 from django.conf import settings
 import traceback
+from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 
 class GoogleSearch:
@@ -103,6 +109,22 @@ class GoogleSearch:
 			title = h3.text
 			search_results.append(SearchResult(title, url))
 		return search_results
+
+	def search_selenium(self, query):
+		options = Options()
+		options.add_argument("--headless")
+		options.add_argument("--no-sandbox")
+		options.add_argument("--disable-dev-shm-usage")
+		options.add_argument("--lang=en-US")
+		driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+		
+		driver.get('https://www.google.com/search?q={}'.format(query))
+		WebDriverWait(driver, 5).until(EC.presence_of_element_located((By.CLASS_NAME, "g")))
+		count= driver.find_element_by_id("result-stats")
+
+		titles = driver.find_elements_by_xpath("//div[@class='g']//h3")
+		urls = driver.find_elements_by_xpath("//div[@class='g']/div/div/a")
+		return count, titles, urls
 
 class SearchResponse:
 	def __init__(self, results, total):

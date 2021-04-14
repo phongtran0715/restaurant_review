@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from django.conf import settings
 from google_map.scraper import WebDriver
-import time, os
+import time, os, re
 from googlesearch.googlesearch import GoogleSearch
 
 
@@ -44,17 +44,16 @@ def api_search_google_search_view(request, *kwargs):
 		data = []
 		keyword = request.GET.get('keyword')
 		keyword = keyword.replace(" ", "+")
-		search_data = GoogleSearch().search(query=keyword, prefetch_pages=True)
-		response['total_result'] = search_data.total
-		for result in search_data.results:
+		count, titles, urls = GoogleSearch().search_selenium(query=keyword)
+		print(count.text)
+		total = int(re.sub("[', ]", "", re.search("(([0-9]+[', ])*[0-9]+)", count.text).group(1)))
+		response['total_result'] = total
+		for i in range(len(titles)):
 			data.append({
-				'title' : result.title,
-				'url' : result.url,
-				# 'content' : result.get_text().strip()
+				'title' : titles[i].text,
+				'url' : urls[1].get_attribute('href'),
 				})
 		response['data'] = data
 		return Response(response, status=status.HTTP_200_OK)
 	else:
 		return Response(status=status.HTTP_400_BAD_REQUEST)
-
-
