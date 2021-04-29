@@ -22,7 +22,7 @@ env = environ.Env(
 environ.Env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
 # Quick-start development settings - unsuitable for production
@@ -32,10 +32,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '172.31.20.217', '54.252.173.242']
-
+DEBUG = False
 
 # Application definition
 
@@ -182,7 +179,12 @@ USE_TZ = False
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = (
+	os.path.join(BASE_DIR, 'static'),
+	# Extra lookup directories for collectstatic to find static files
+)
+
 VENV_PATH = os.path.dirname(BASE_DIR)
 STATIC_ROOT = os.path.join(VENV_PATH, 'static_root')
 
