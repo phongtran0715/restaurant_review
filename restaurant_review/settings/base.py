@@ -185,9 +185,6 @@ STATICFILES_DIRS = (
 	# Extra lookup directories for collectstatic to find static files
 )
 
-VENV_PATH = os.path.dirname(BASE_DIR)
-STATIC_ROOT = os.path.join(VENV_PATH, 'static_root')
-
 # User settings
 FETCH_EMAIL = env('FETCH_EMAIL')
 FETCH_EMAIL_PASSWORD = env('FETCH_EMAIL_PASSWORD')
