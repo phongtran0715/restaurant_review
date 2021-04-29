@@ -2,8 +2,8 @@ from django.shortcuts import render
 from rest_framework import status
 from rest_framework.decorators import api_view, renderer_classes
 from rest_framework.response import Response
-from review.models import Review
-from review.serializers import ReviewSerializer
+from review.models import Review, ScrapeReviewStatus
+from review.serializers import ReviewSerializer, ScrapeStatusSerilizer
 import json, logging
 from datetime import datetime
 import pandas as pd
@@ -383,7 +383,59 @@ def get_date_range(restaurant_id, start_date=None, end_date=None):
 		date_to = end_date
 	
 	return str(date_from), str(date_to)
-	
+
+@api_view(['GET'])
+def get_scrape_status_view(request, **kwargs):
+	if request.method == 'GET':
+		page = request.data.get('page', 1)
+		restaurant_id = request.GET.get('res_id', None)
+		if restaurant_id is not None:
+			scrape_infos = ScrapeReviewStatus.objects.get(res_id=restaurant_id)
+		else:
+			scrape_infos = ScrapeReviewStatus.objects.all()
+
+		response = {}
+		content = []
+		paginator = Paginator(scrape_infos, 30)
+		response['total_record'] = paginator.count
+		response['page'] = page
+		response['total_page'] = paginator.num_pages
+		response['page_size'] = 30
+		if page > paginator.num_pages or page <= 0:
+			response['data'] = []
+		else:
+			page_data = paginator.page(page)
+			for item in page_data:
+				content.append(item)
+			response['data'] = content
+
+		return Response(response, status=status.HTTP_200_OK)
+	else:
+		return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['POST'])
+def insert_scrape_status_view(request, **kwargs):
+	"""
+	"restaurant_id" : "1",
+	"scrape_url" : "https://www.facebook.com/Thaigarden-943944948983900/",
+	"platform" : "google",
+	"retry_count" : "3",
+	"review_count" : "0",
+	"created_at" : "2021-01-18"
+	"last_updated_at" : "2021-01-18"
+	"error_msg" : "Invalid URL."
+	"status" : "FAILED"
+	"""
+	response = {}
+	if request.method == 'POST':
+		serializer = ScrapeStatusSerilizer(data=request.data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(status=status.HTTP_200_OK)
+		else:
+			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+	else:
+		response['data'] = "bad request"
+		return Response(response,status=status.HTTP_400_BAD_REQUEST)
 	

@@ -7,4 +7,6 @@ urlpatterns = [
 	path('score/all/', views.api_get_all_restaurant_score, name='get-all-score'),
 	path('score/period/', views.api_get_all_restaurant_score_period, name='get-all-score-period'),
 	path('score/', views.api_get_restaurant_score, name='get-score'),
+	path('scrape-status/', views.get_scrape_status_view, name='get-scrape-status'),
+	path('scrape-status/new/', views.insert_scrape_status_view, name='create-scrape-status'),
 ]
