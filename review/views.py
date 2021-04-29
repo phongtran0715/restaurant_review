@@ -7,7 +7,6 @@ from review.serializers import ReviewSerializer
 import json, logging
 from datetime import datetime
 import pandas as pd
-from rest_framework_swagger.renderers import OpenAPIRenderer, SwaggerUIRenderer
 from django.db.models import Q, Max, Sum
 from restaurant.models import Restaurant
 from review.models import ScoreMonth, ScoreQuarter, ScoreYear
@@ -384,12 +383,6 @@ def get_date_range(restaurant_id, start_date=None, end_date=None):
 		date_to = end_date
 	
 	return str(date_from), str(date_to)
-
-@api_view()
-@renderer_classes([OpenAPIRenderer, SwaggerUIRenderer])
-def schema_view(request):
-	generator = schemas.SchemaGenerator(title='Rest Swagger')
-	return Response(generator.get_schema(request=request))
 	
 
 
