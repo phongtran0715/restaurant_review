@@ -12,3 +12,15 @@ class Restaurant(models.Model):
 	class Meta:
 		db_table = "restaurant"
 		ordering = ['res_id']
+
+class Platform(models.Model):
+	id = models.AutoField(primary_key=True)
+	name = models.CharField(max_length=128, blank=True)
+
+	def __str__(self):
+		return self.name
+
+	class Meta:
+		db_table = "platform"
+
+	
