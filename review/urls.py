@@ -1,12 +1,15 @@
-from django.urls import path, re_path
+from django.urls import include, path, re_path
 from . import views
+from rest_framework.routers import DefaultRouter
+
+
+router = DefaultRouter()
+router.register(r'review', views.ReviewViewSet)
+router.register(r'scrape-status', views.ScrapeReviewStatusViewSet)
 
 urlpatterns = [
-	path('review/', views.api_get_review_view, name='get-review'),
-	path('review/new/', views.api_insert_review_view, name='create_review'),
-	path('score/all/', views.api_get_all_restaurant_score, name='get-all-score'),
-	path('score/period/', views.api_get_all_restaurant_score_period, name='get-all-score-period'),
-	path('score/', views.api_get_restaurant_score, name='get-score'),
-	path('scrape-status/', views.get_scrape_status_view, name='get-scrape-status'),
-	path('scrape-status/new/', views.insert_scrape_status_view, name='create-scrape-status'),
+	path('score/all/', views.RestaurantScoreView.as_view()),
+	path('score/<int:pk>/', views.RestaurantScoreDetailView.as_view()),
+	path('score/period/', views.RestaurantScorePeriodView.as_view()),
+	path('', include(router.urls)),
 ]

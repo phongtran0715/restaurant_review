@@ -7,10 +7,20 @@ from django.core.paginator import (Paginator, EmptyPage,
 from email_scrape.models import Email
 from email_scrape.serializers import EmailSerializer
 import logging, json
-
+from rest_framework import generics
 
 logger = logging.getLogger(__name__)
 
+
+class EmailListView(generics.ListCreateAPIView):
+	queryset = Email.objects.all()
+	serializer_class = EmailSerializer
+	filterset_fields = ['subject', 'email_from', 'email_date', 'category']
+
+class EmailSenderListView(generics.ListAPIView):
+	queryset = Email.objects.values('email_from').distinct()
+	serializer_class = EmailSerializer
+'''
 @api_view(['GET'])
 def get_email_view(request, **kwargs):
 	if request.method == 'GET':
@@ -112,4 +122,5 @@ def get_sender_view(request, **kwargs):
 			}
 			return Response(response, status=status.HTTP_404_NOT_FOUND)
 	else:
-		return Response(status=status.HTTP_400_BAD_REQUEST)		
+		return Response(status=status.HTTP_400_BAD_REQUEST)	
+'''	

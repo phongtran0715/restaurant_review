@@ -5,7 +5,7 @@ from review.models import Review, ScrapeReviewStatus
 class ReviewSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = Review
-		fields = ('author', 'rating', 'weight_score', 'text', 'review_count', 'source', 'category', 'country', 'state', 'created_date')
+		fields = '__all__'
 
 class ScrapeStatusSerilizer(serializers.ModelSerializer):
 	class Meta:

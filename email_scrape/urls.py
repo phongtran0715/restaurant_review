@@ -3,6 +3,6 @@ from . import views
 
 
 urlpatterns = [
-	path("email/", views.get_email_view, name="get-email"),
-	path("email/sender/", views.get_sender_view, name="get-sender")
+	path("email/", views.EmailListView.as_view()),
+	path("email/sender/", views.EmailSenderListView.as_view())
 ]
