@@ -12,7 +12,8 @@ class ReviewAdmin(admin.ModelAdmin):
 
 @admin.register(ScrapeReviewStatus)
 class ScrapeReviewStatusAdmin(admin.ModelAdmin):
-	list_display = ("id", "platform", "scrape_url", "status", "error_msg", "retry_count", "review_count", "view_google_link")
+	list_display = ("id", "platform", "scrape_url", "status", "error_msg",
+		"retry_count", "review_count", "res_id", "view_google_link", "update_url_link")
 	list_filter = ("res_id", "retry_count", "review_count", "status", "platform")
 	list_editable = ('scrape_url',)
 

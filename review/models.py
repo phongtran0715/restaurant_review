@@ -1,5 +1,7 @@
 from django.db import models
 from restaurant.models import Restaurant, Platform
+from django.utils.html import format_html
+from django.shortcuts import redirect, reverse
 
 
 class Review(models.Model):
@@ -84,4 +86,9 @@ class ScrapeReviewStatus(models.Model):
 	class Meta:
 		db_table = "scrape_status"
 		ordering = ['res_id']
+
+	def update_url_link(self):
+		change_url = reverse('admin:restaurant_restaurant_change', args=(self.res_id,))
+		return format_html('<a href="{}" target="_blank">Edit</a>', change_url)
+	update_url_link.short_description = "Update URL"
 
