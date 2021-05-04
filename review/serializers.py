@@ -10,8 +10,8 @@ class ReviewSerializer(serializers.ModelSerializer):
 class ScrapeReviewStatusSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = ScrapeReviewStatus
-		fields = '__all__'
-		# exclude = ('id', )
+		# fields = '__all__'
+		exclude = ('id', )
 
 	def save(self, validated_data):
 		return ScrapeReviewStatus.objects.create(**validated_data)

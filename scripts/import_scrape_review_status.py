@@ -5,7 +5,7 @@ from datetime import datetime
 
 
 # API_ENDPOINT="http://54.252.173.242:8000/api/review/new/"
-API_ENDPOINT="http://127.0.0.1:8000/api/import_scrape_review/"
+API_ENDPOINT="http://54.252.173.242:8000/api/import_scrape_review/"
 file_path="/home/jack/Downloads/Document/restaurant/reviews_dump.json"
 
 def parse_json(file_path):

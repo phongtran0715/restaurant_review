@@ -1,5 +1,7 @@
 from django.contrib import admin
 from review.models import Review, ScrapeReviewStatus
+from django.utils.html import format_html
+from restaurant.models import Restaurant
 
 
 @admin.register(Review)
@@ -15,8 +17,19 @@ class ScrapeReviewStatusAdmin(admin.ModelAdmin):
 	list_editable = ('scrape_url',)
 
 	def view_google_link(self, obj):
-		from django.utils.html import format_html
-		url = "https://www.google.com/"
+		search_term = ""
+		res_obj = Restaurant.objects.get(res_id=obj.id)
+		if res_obj is not None:
+			res_name = res_obj.name
+			if res_name is not None:
+				search_term += res_name
+
+		if search_term != "":
+			search_term += "+".format(obj.platform)
+		else:
+			search_term += obj.platform
+
+		url = "https://www.google.com/search?q={}".format(search_term)
 		return format_html('<a href="{}" target="_blank">Search</a>', url)
 
 	view_google_link.short_description = "Google Search"

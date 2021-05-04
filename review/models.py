@@ -70,7 +70,7 @@ class ScoreYear(models.Model):
 class ScrapeReviewStatus(models.Model):
 	error_msg = models.CharField(blank=True, default="", max_length=1024)
 	res_id = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='res_scrape', db_index=True)
-	scrape_url = models.CharField(blank=True, default="", max_length=256);
+	scrape_url = models.CharField(blank=True, default="", max_length=512);
 	retry_count = models.IntegerField(default=0)
 	review_count = models.IntegerField(default=0)
 	status = models.CharField(blank=False, default="UNKNOW", max_length=32, db_index=True)
