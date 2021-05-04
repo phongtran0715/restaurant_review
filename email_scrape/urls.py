@@ -4,5 +4,6 @@ from . import views
 
 urlpatterns = [
 	path("email/", views.EmailListView.as_view()),
+	path("email/<int:pk>/", views.EmailDetailView.as_view()),
 	path("email/sender/", views.EmailSenderListView.as_view())
 ]

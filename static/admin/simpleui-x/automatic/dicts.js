@@ -153,4 +153,9 @@ var dicts = {
     'fas fa-tachometer-alt': ['dashboard'],
 
     'fas fa-user-plus': ['sub'],
+
+    'fas fa-envelope' : ['Email', 'Emails'],
+
+    'fas fa-object-group' : ['Platform', 'Platforms'], 
+
 }

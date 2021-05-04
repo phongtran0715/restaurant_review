@@ -1,22 +1,23 @@
 from django.shortcuts import render
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from review.serializers import ReviewSerializer, ScrapeStatusSerilizer
 import json, logging
 import pandas as pd
-from django.db.models import Q, Max, Sum
-from restaurant.models import Restaurant
-from review.models import (Review, ScrapeReviewStatus,
-	ScoreMonth, ScoreQuarter, ScoreYear)
-from rest_framework import generics, status
-from rest_framework.pagination import PageNumberPagination
-from drf_yasg import openapi
-from drf_yasg.inspectors import SwaggerAutoSchema
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import viewsets
-from rest_framework import generics
 import datetime, time
 from datetime import datetime
+from django.db.models import Q, Max, Sum
+from restaurant.models import Restaurant, Platform
+from review.models import (
+	Review, ScrapeReviewStatus,
+	ScoreMonth, ScoreQuarter, ScoreYear)
+from review.serializers import (
+	ReviewSerializer,
+	ScrapeReviewStatusSerializer)
+from rest_framework import generics, status
+from rest_framework.pagination import PageNumberPagination
+from rest_framework import viewsets
+from rest_framework import generics
+from rest_framework.decorators import api_view
+
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +87,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class ScrapeReviewStatusViewSet(viewsets.ModelViewSet):
 	queryset = ScrapeReviewStatus.objects.all()
-	serializer_class = ScrapeStatusSerilizer
+	serializer_class = ScrapeReviewStatusSerializer
 	pagination_class = PageNumberPagination
 
 class RestaurantScoreDetailView(generics.ListAPIView):
@@ -131,14 +132,11 @@ class RestaurantScoreView(generics.ListAPIView):
 		try:
 			start_date = None
 			end_date = None
-			page = 1
 			category = None
 			if "start_date" in request.GET:
 				start_date = request.GET["start_date"]
 			if "end_date" in request.GET:
 				end_date = request.GET["end_date"]
-			if "page" in request.GET:
-				page = int(request.GET["page"])
 			if "category" in request.GET:
 				category = request.GET["category"]
 
@@ -292,3 +290,22 @@ class RestaurantScorePeriodView(generics.ListAPIView):
 				"message": "Invalid page"
 			}
 			return Response(response, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+def import_scrape_review_view(request, **kwargs):
+	if request.method == 'POST':
+		data = request.data
+		res_id = data['res_id']
+		res_obj = Restaurant.objects.get(res_id=res_id)
+		if res_obj is None:
+			# create restaurant record
+			res_obj = Restaurant.objects.create(res_id=res_id)
+
+		serializer = ScrapeReviewStatusSerializer(data=request.data)
+		if serializer.is_valid():
+			serializer.save(serializer.validated_data)
+			return Response(status=status.HTTP_200_OK)
+		else:
+			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+	else:
+		return Response(status=status.HTTP_400_BAD_REQUEST)

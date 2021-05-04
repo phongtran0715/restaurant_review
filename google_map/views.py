@@ -1,13 +1,12 @@
 from django.shortcuts import render
 import logging
+import time, os, re
 from rest_framework.response import Response
-from rest_framework.decorators import api_view
 from rest_framework import status
+from rest_framework import generics
 from django.conf import settings
 from google_map.scraper import WebDriver
-import time, os, re
 from googlesearch.googlesearch import GoogleSearch
-from rest_framework import generics
 
 
 # desktop user-agent

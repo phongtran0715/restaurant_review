@@ -7,7 +7,11 @@ class ReviewSerializer(serializers.ModelSerializer):
 		model = Review
 		fields = '__all__'
 
-class ScrapeStatusSerilizer(serializers.ModelSerializer):
+class ScrapeReviewStatusSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = ScrapeReviewStatus
 		fields = '__all__'
+		# exclude = ('id', )
+
+	def save(self, validated_data):
+		return ScrapeReviewStatus.objects.create(**validated_data)

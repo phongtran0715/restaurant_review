@@ -1,13 +1,10 @@
 from django.shortcuts import render
 from rest_framework import status
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from django.core.paginator import (Paginator, EmptyPage,
-	PageNotAnInteger, InvalidPage)
+from rest_framework import generics
 from email_scrape.models import Email
 from email_scrape.serializers import EmailSerializer
 import logging, json
-from rest_framework import generics
 
 logger = logging.getLogger(__name__)
 
@@ -17,9 +14,15 @@ class EmailListView(generics.ListCreateAPIView):
 	serializer_class = EmailSerializer
 	filterset_fields = ['subject', 'email_from', 'email_date', 'category']
 
+class EmailDetailView(generics.RetrieveAPIView):
+	queryset = Email.objects.all()
+	serializer_class = EmailSerializer
+	pagination_class = None
+
 class EmailSenderListView(generics.ListAPIView):
 	queryset = Email.objects.values('email_from').distinct()
 	serializer_class = EmailSerializer
+
 '''
 @api_view(['GET'])
 def get_email_view(request, **kwargs):

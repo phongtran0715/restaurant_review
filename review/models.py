@@ -68,14 +68,13 @@ class ScoreYear(models.Model):
 		ordering = ['final_score']
 
 class ScrapeReviewStatus(models.Model):
-	id = models.AutoField(primary_key=True)
 	error_msg = models.CharField(blank=True, default="", max_length=1024)
 	res_id = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='res_scrape', db_index=True)
 	scrape_url = models.CharField(blank=True, default="", max_length=256);
 	retry_count = models.IntegerField(default=0)
 	review_count = models.IntegerField(default=0)
 	status = models.CharField(blank=False, default="UNKNOW", max_length=32, db_index=True)
-	platform = models.ForeignKey(Platform, on_delete=models.CASCADE, related_name='res_platform', db_index=True)
+	platform = models.CharField(blank=False, default="UNKNOW", max_length=32, db_index=True)
 	created_date = models.DateTimeField(blank=False, auto_now_add=True)
 	last_updated_at = models.DateTimeField(blank=False, auto_now_add=True)
 
