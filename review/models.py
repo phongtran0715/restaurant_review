@@ -1,5 +1,5 @@
 from django.db import models
-from restaurant.models import Restaurant, Platform
+from restaurant.models import Restaurant
 from django.utils.html import format_html
 from django.shortcuts import redirect, reverse
 

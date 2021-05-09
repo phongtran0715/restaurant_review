@@ -5,7 +5,7 @@ import pandas as pd
 import datetime, time
 from datetime import datetime
 from django.db.models import Q, Max, Sum
-from restaurant.models import Restaurant, Platform
+from restaurant.models import Restaurant
 from review.models import (
 	Review, ScoreMonth, ScoreQuarter, ScoreYear)
 from review.serializers import ReviewSerializer
