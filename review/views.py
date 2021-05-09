@@ -5,9 +5,13 @@ import pandas as pd
 import datetime, time
 from datetime import datetime
 from django.db.models import Q, Max, Sum
+from restaurant.models import Restaurant, Platform
 from review.models import (
-	Review, ScoreMonth, ScoreQuarter, ScoreYear)
-from review.serializers import ReviewSerializer
+	Review, ScrapeReviewStatus,
+	ScoreMonth, ScoreQuarter, ScoreYear)
+from review.serializers import (
+	ReviewSerializer,
+	ScrapeReviewStatusSerializer)
 from rest_framework import generics, status
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import viewsets
@@ -81,10 +85,10 @@ class ReviewViewSet(viewsets.ModelViewSet):
 	serializer_class = ReviewSerializer
 	pagination_class = PageNumberPagination
 
-# class ScrapeReviewStatusViewSet(viewsets.ModelViewSet):
-# 	queryset = ScrapeReviewStatus.objects.all()
-# 	serializer_class = ScrapeReviewStatusSerializer
-# 	pagination_class = PageNumberPagination
+class ScrapeReviewStatusViewSet(viewsets.ModelViewSet):
+	queryset = ScrapeReviewStatus.objects.all()
+	serializer_class = ScrapeReviewStatusSerializer
+	pagination_class = PageNumberPagination
 
 class RestaurantScoreDetailView(generics.ListAPIView):
 	def list(self, request):
@@ -287,21 +291,21 @@ class RestaurantScorePeriodView(generics.ListAPIView):
 			}
 			return Response(response, status=status.HTTP_404_NOT_FOUND)
 
-# @api_view(['POST'])
-# def import_scrape_review_view(request, **kwargs):
-# 	if request.method == 'POST':
-# 		data = request.data
-# 		res_id = data['res_id']
-# 		res_obj = Restaurant.objects.get(res_id=res_id)
-# 		if res_obj is None:
-# 			# create restaurant record
-# 			res_obj = Restaurant.objects.create(res_id=res_id)
+@api_view(['POST'])
+def import_scrape_review_view(request, **kwargs):
+	if request.method == 'POST':
+		data = request.data
+		res_id = data['res_id']
+		res_obj = Restaurant.objects.get(res_id=res_id)
+		if res_obj is None:
+			# create restaurant record
+			res_obj = Restaurant.objects.create(res_id=res_id)
 
-# 		serializer = ScrapeReviewStatusSerializer(data=request.data)
-# 		if serializer.is_valid():
-# 			serializer.save(serializer.validated_data)
-# 			return Response(status=status.HTTP_200_OK)
-# 		else:
-# 			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-# 	else:
-# 		return Response(status=status.HTTP_400_BAD_REQUEST)
+		serializer = ScrapeReviewStatusSerializer(data=request.data)
+		if serializer.is_valid():
+			serializer.save(serializer.validated_data)
+			return Response(status=status.HTTP_200_OK)
+		else:
+			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+	else:
+		return Response(status=status.HTTP_400_BAD_REQUEST)

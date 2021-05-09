@@ -38,6 +38,7 @@ urlpatterns = [
 	path('api/', include('review.urls')),
 	path('api/', include('email_scrape.urls')),
 	path('api/', include('google_map.urls')),
+	path('api/', include('restaurant.urls')),
 	url(r'^$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
 	url(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 	path('__debug__/', include(debug_toolbar.urls)),
