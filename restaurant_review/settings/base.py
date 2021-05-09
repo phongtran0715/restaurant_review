@@ -48,7 +48,6 @@ INSTALLED_APPS = [
 	'debug_toolbar',
 	'rest_framework',
 	'review',
-	'restaurant',
 	'django_crontab',
 	'email_scrape',
 	'google_map',
