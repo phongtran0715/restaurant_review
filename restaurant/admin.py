@@ -1,6 +1,5 @@
 from django.contrib import admin
 from restaurant.models import Restaurant, Platform
-from review.models import ScrapeReviewStatus
 
 @admin.register(Restaurant)
 class RestaurantAdmin(admin.ModelAdmin):
