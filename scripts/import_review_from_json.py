@@ -4,7 +4,7 @@ from datetime import datetime
 
 
 # API_ENDPOINT="http://54.252.173.242:8000/api/review/new/"
-API_ENDPOINT="http://127.0.0.1:8000/api/review/new/"
+API_ENDPOINT="http://127.0.0.1:8000/api/import_review/"
 file_path="/home/jack/Downloads/Document/restaurant/reviews_dump.json"
 
 '''
@@ -44,7 +44,7 @@ def parse_json(file_path):
 				'rating':float(it['fields']['rating']), 
 				'weight_score': get_weighted_from_review(review_count), 
 				'text':it['fields']['text'],
-				'restaurant_id':it['fields']['restaurant'],
+				'res_id':it['fields']['restaurant'],
 				'review_count':review_count,
 				'source' : it['fields']['source'],
 				'category':'NA',

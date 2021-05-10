@@ -3,14 +3,14 @@ from rest_framework.response import Response
 import json, logging
 import pandas as pd
 import datetime, time
-from datetime import datetime
 from django.db.models import Q, Max, Sum
 from restaurant.models import Restaurant
 from review.models import (
 	Review, ScoreMonth, ScoreQuarter, ScoreYear)
-from review.serializers import ReviewSerializer
+from review.serializers import ReviewSerializer, RestaurantScoreSerializer
 from rest_framework import generics, status
 from rest_framework.pagination import PageNumberPagination
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger, InvalidPage
 from rest_framework import viewsets
 from rest_framework import generics
 from rest_framework.decorators import api_view
@@ -65,228 +65,244 @@ def calculate_weight_score_view(res_id, start_date=None, end_date=None, category
 	return round(res_score, 8)
 
 def get_date_range(restaurant_id, start_date=None, end_date=None):
-	if start_date is None:
-		date_from  = Review.objects.filter(res_id_id=restaurant_id).order_by('-created_date').earliest('created_date').created_date
-	else:
-		date_from = start_date
+	try:
+		if start_date is None:
+			date_from  = Review.objects.filter(res_id_id=restaurant_id).order_by('-created_date').earliest('created_date').created_date
+		else:
+			date_from = start_date
 
-	if end_date is None:
-		date_to = Review.objects.filter(res_id_id=restaurant_id).order_by('-created_date').latest('created_date').created_date
-	else:
-		date_to = end_date
-	
+		if end_date is None:
+			date_to = Review.objects.filter(res_id_id=restaurant_id).order_by('-created_date').latest('created_date').created_date
+		else:
+			date_to = end_date
+	except Review.DoesNotExist:
+		date_from = None
+		date_to = None
 	return str(date_from), str(date_to)
 
 class ReviewViewSet(viewsets.ModelViewSet):
 	queryset = Review.objects.all()
 	serializer_class = ReviewSerializer
 	pagination_class = PageNumberPagination
+	
 
-# class ScrapeReviewStatusViewSet(viewsets.ModelViewSet):
-# 	queryset = ScrapeReviewStatus.objects.all()
-# 	serializer_class = ScrapeReviewStatusSerializer
-# 	pagination_class = PageNumberPagination
+@api_view(['GET'])
+def api_scores_detail_view(request):
+	print(request.GET.get('res_id'))
+	try:
+		res_obj = Restaurant.objects.get(res_id=request.GET.get('res_id'))
+	except Restaurant.DoesNotExist:
+		response = {
+			"message": "Not found review data"
+		}
+		return Response(response, status=status.HTTP_404_NOT_FOUND)
 
-class RestaurantScoreDetailView(generics.ListAPIView):
-	def list(self, request):
-		try:
-			# get maximum review count
-			try:
-				res_obj = Restaurant.objects.get(res_id=request.GET.get('res_id'))
-			except Restaurant.DoesNotExist:
-				response = {
-					"message": "Not found review data"
-				}
-				return Response(response, status=status.HTTP_404_NOT_FOUND)
+	max_review = Restaurant.objects.aggregate(Max('number_review'))['number_review__max']
+	print("Maximum review : {}".format(max_review))
 
-			max_review = Restaurant.objects.aggregate(Max('number_review'))['number_review__max']
-			print("Maximum review : {}".format(max_review))
+	weight_score = calculate_weight_score_view(res_obj.res_id)
+	accuracey = round((res_obj.number_review / max_review) *100, 2)
+	final_score = round(weight_score * accuracey / 100, 8)
+	date_from , date_to = get_date_range(res_obj.res_id)
 
-			weight_score = calculate_weight_score_view(res_obj.res_id)
-			accuracey = round((res_obj.number_review / max_review) *100, 2)
-			final_score = round(weight_score * accuracey / 100, 8)
-			date_from , date_to = get_date_range(res_obj.id)
+	response = {
+		"restaurant_id" : res_obj.res_id,
+		"category" : "",
+		"review_count" : res_obj.number_review,
+		"accuracey" : accuracey,
+		"weighted_score" : weight_score,
+		"final_score" : final_score,
+		"date_from" : date_from,
+		"date_to" : date_to
+	}
+	return Response(response, status=status.HTTP_200_OK)
 
-			response = {
-				"restaurant_id" : res_obj.res_id,
-				"category" : "",
-				"review_count" : res_obj.number_review,
-				"accuracey" : accuracey,
-				"weighted_score" : weight_score,
-				"final_score" : final_score,
-				"date_from" : date_from,
-				"date_to" : date_to
-			}
-			return Response(response, status=status.HTTP_200_OK)
-		except Review.DoesNotExist:
-			response = {
-				"message": "Not found review data"
-			}
-			return Response(response, status=status.HTTP_404_NOT_FOUND)
+@api_view(['GET'])
+def api_restaurant_scores_view(request):
+	try:
+		start_date = None
+		end_date = None
+		category = None
+		page = 1
+		if "start_date" in request.GET:
+			start_date = request.GET["start_date"]
+		if "end_date" in request.GET:
+			end_date = request.GET["end_date"]
+		if "category" in request.GET:
+			category = request.GET["category"]
+		if "page" in request.GET:
+			page = request.GET["page"]
 
-class RestaurantScoreView(generics.ListAPIView):
-	def list(self, request):
-		try:
-			start_date = None
-			end_date = None
-			category = None
-			if "start_date" in request.GET:
-				start_date = request.GET["start_date"]
-			if "end_date" in request.GET:
-				end_date = request.GET["end_date"]
-			if "category" in request.GET:
-				category = request.GET["category"]
+		is_and = False
+		sql_query = '''SELECT distinct(res_id_id) as res_item_id, 1 id, count(*) as review_num FROM reviews '''
 
-			is_and = False
-			sql_query = '''SELECT distinct(res_id_id) as res_item_id, 1 id, count(*) as review_num FROM reviews '''
+		if start_date is not None:
+			sql_query += " WHERE created_date >= '{}'".format(start_date)
+			is_and = True
 
-			if start_date is not None:
-				sql_query += " WHERE created_date >= '{}'".format(start_date)
+		if end_date is not None:
+			if is_and:
+				sql_query += " AND created_date <= '{}'".format(end_date)
+			else:
+				sql_query += " WHERE created_date <= '{}'".format(end_date)
 				is_and = True
 
-			if end_date is not None:
-				if is_and:
-					sql_query += " AND created_date <= '{}'".format(end_date)
-				else:
-					sql_query += " WHERE created_date <= '{}'".format(end_date)
-					is_and = True
-
-			if category is not None:
-				if is_and:
-					sql_query += " AND category = '{}'".format(category)
-				else:
-					sql_query += " WHERE category = '{}'".format(category)
-					is_and = True
-
-			sql_query += " group by res_item_id order by review_num desc;"
-
-			restaurants = Review.objects.raw(sql_query)
-			if len(list(restaurants)) <= 0:
-				response = {
-					"message": "Not found review data"
-				}
-				return Response(response, status=status.HTTP_404_NOT_FOUND)
-			max_review = restaurants[0].review_num
-			# print("max review count : {}".format(max_review))
-
-			response = {}
-			content = []
-			paginator = Paginator(restaurants, 20)
-			response['total_record'] = paginator.count
-			response['page'] = page
-			response['total_page'] = paginator.num_pages
-			response['page_size'] = 20
-
-			if page > paginator.num_pages or page <= 0:
-				response['data'] = []
+		if category is not None:
+			if is_and:
+				sql_query += " AND category = '{}'".format(category)
 			else:
-				page_data = paginator.page(page)
-				# get maximum review count
-				for item in page_data:
-					weight_score = calculate_weight_score_view(item.res_item_id, start_date, end_date, category)
-					accuracey = round((item.review_num / max_review) *100, 2)
-					final_score = round(weight_score * accuracey / 100, 8)
-					date_from , date_to = get_date_range(item.res_item_id, start_date, end_date)
-					data = {
-						"restaurant_id" : item.res_item_id,
-						"category" : "",
-						"review_number" : item.review_num,
-						"accuracey" : accuracey,
-						"weighted_score" : weight_score,
-						"final_score" : final_score,
-						"date_from" : date_from,
-						"date_to" : date_to
-					}
-					content.append(data)
-				response['data'] = content
+				sql_query += " WHERE category = '{}'".format(category)
+				is_and = True
 
-			return Response(response, status=status.HTTP_200_OK)
-		except Review.DoesNotExist:
+		sql_query += " group by res_item_id order by review_num desc;"
+
+		restaurants = Review.objects.raw(sql_query)
+		if len(list(restaurants)) <= 0:
 			response = {
 				"message": "Not found review data"
 			}
 			return Response(response, status=status.HTTP_404_NOT_FOUND)
-		except PageNotAnInteger:
-			response['data'] = paginator.page(1)
-		except EmptyPage:
-			response['data'] = paginator.page(paginator.num_pages)
-		except InvalidPage:
+		max_review = restaurants[0].review_num
+		# print("max review count : {}".format(max_review))
+
+		response = {}
+		content = []
+		paginator = Paginator(restaurants, 20)
+		response['total_record'] = paginator.count
+		response['total_page'] = paginator.num_pages
+		response['page_size'] = 20
+
+		if page > paginator.num_pages or page <= 0:
+			response['data'] = []
+		else:
+			page_data = paginator.page(page)
+			# get maximum review count
+			for item in page_data:
+				weight_score = calculate_weight_score_view(item.res_item_id, start_date, end_date, category)
+				accuracey = round((item.review_num / max_review) *100, 2)
+				final_score = round(weight_score * accuracey / 100, 8)
+				date_from , date_to = get_date_range(item.res_item_id, start_date, end_date)
+				data = {
+					"restaurant_id" : item.res_item_id,
+					"category" : "",
+					"review_number" : item.review_num,
+					"accuracey" : accuracey,
+					"weighted_score" : weight_score,
+					"final_score" : final_score,
+					"date_from" : date_from,
+					"date_to" : date_to
+				}
+				content.append(data)
+			response['data'] = content
+
+		return Response(response, status=status.HTTP_200_OK)
+	except Review.DoesNotExist:
+		response = {
+			"message": "Not found review data"
+		}
+		return Response(response, status=status.HTTP_404_NOT_FOUND)
+	except PageNotAnInteger:
+		response['data'] = paginator.page(1)
+	except EmptyPage:
+		response['data'] = paginator.page(paginator.num_pages)
+	except InvalidPage:
+		response = {
+			"message": "Invalid page"
+		}
+		return Response(response, status=status.HTTP_404_NOT_FOUND)
+		
+@api_view(['GET'])
+def scores_period_view(request):
+	try:
+		period_type = None
+		period = None
+		page = 1
+		if "period_type" in request.GET:
+			period_type = request.GET["period_type"]
+		if "period" in request.GET:
+			period = request.GET["period"]
+		if "page" in request.GET:
+			page = int(request.GET["page"])
+
+		restaurants = None
+		if period_type == 'month':
+			sql_query = "SELECT * FROM scores_month WHERE period = '{}' ORDER BY final_score DESC".format(datetime.date(int(period.split("-")[0]), int(period.split("-")[1]), 1))
+			restaurants = ScoreMonth.objects.raw(sql_query)
+		elif period_type == 'quarter':
+			sql_query = "SELECT * FROM scores_quarter WHERE period = '{}' ORDER BY final_score DESC".format(datetime.date(int(period.split("-")[0]), int(period.split("-")[1]), 1))
+			restaurants = ScoreQuarter.objects.raw(sql_query)
+		elif period_type == 'year':
+			sql_query = "SELECT * FROM scores_year WHERE period = '{}' ORDER BY final_score DESC".format(datetime.date(int(period), 1, 1))
+			restaurants = ScoreYear.objects.raw(sql_query)
+
+		# print("sql query: {}".format(sql_query))
+		if restaurants is None or len(list(restaurants)) <= 0:
 			response = {
-				"message": "Invalid page"
+				"message": "Not found review data"
 			}
 			return Response(response, status=status.HTTP_404_NOT_FOUND)
 
-class RestaurantScorePeriodView(generics.ListAPIView):
-	def list(self, request):
+		response = {}
+		content = []
+		paginator = Paginator(restaurants, 20)
+		response['total_record'] = paginator.count
+		response['page'] = page
+		response['total_page'] = paginator.num_pages
+		response['page_size'] = 20
+
+		if page > paginator.num_pages or page <= 0:
+			response['data'] = []
+		else:
+			page_data = paginator.page(page)
+			for item in page_data:
+				data = {
+					"restaurant_id" : item.res_id,
+					"review_number" : item.review_count,
+					"accuracey" : item.accuracey,
+					"weighted_score" : item.weight_score,
+					"final_score" : item.final_score,
+					"period" : period,
+				}
+				content.append(data)
+			response['data'] = content
+
+		return Response(response, status=status.HTTP_200_OK)
+	except Review.DoesNotExist:
+		response = {
+			"message": "Not found review data"
+		}
+		return Response(response, status=status.HTTP_404_NOT_FOUND)
+	except PageNotAnInteger:
+		response['data'] = paginator.page(1)
+	except EmptyPage:
+		response['data'] = paginator.page(paginator.num_pages)
+	except InvalidPage:
+		response = {
+			"message": "Invalid page"
+		}
+		return Response(response, status=status.HTTP_404_NOT_FOUND)
+
+@api_view(['POST'])
+def import_review_view(request, **kwargs):
+	if request.method == 'POST':
+		data = request.data
+		res_id = data['res_id']
 		try:
-			print(request.GET)
-			period_type = None
-			period = None
-			page = 1
-			if "period_type" in request.GET:
-				period_type = request.GET["period_type"]
-			if "period" in request.GET:
-				period = request.GET["period"]
-			if "page" in request.GET:
-				page = int(request.GET["page"])
+			res_obj = Restaurant.objects.get(res_id=res_id)
+			res_obj.number_review += 1
+			res_obj.save()
+		except Restaurant.DoesNotExist:
+			Restaurant.objects.create(res_id=res_id)
 
-			restaurants = None
-			if period_type == 'month':
-				sql_query = "SELECT * FROM scores_month WHERE period = '{}' ORDER BY final_score DESC".format(datetime.date(int(period.split("-")[0]), int(period.split("-")[1]), 1))
-				restaurants = ScoreMonth.objects.raw(sql_query)
-			elif period_type == 'quarter':
-				sql_query = "SELECT * FROM scores_quarter WHERE period = '{}' ORDER BY final_score DESC".format(datetime.date(int(period.split("-")[0]), int(period.split("-")[1]), 1))
-				restaurants = ScoreQuarter.objects.raw(sql_query)
-			elif period_type == 'year':
-				sql_query = "SELECT * FROM scores_year WHERE period = '{}' ORDER BY final_score DESC".format(datetime.date(int(period), 1, 1))
-				restaurants = ScoreYear.objects.raw(sql_query)
-
-			print("sql query: {}".format(sql_query))
-			if restaurants is None or len(list(restaurants)) <= 0:
-				response = {
-					"message": "Not found review data"
-				}
-				return Response(response, status=status.HTTP_404_NOT_FOUND)
-
-			response = {}
-			content = []
-			paginator = Paginator(restaurants, 20)
-			response['total_record'] = paginator.count
-			response['page'] = page
-			response['total_page'] = paginator.num_pages
-			response['page_size'] = 20
-
-			if page > paginator.num_pages or page <= 0:
-				response['data'] = []
-			else:
-				page_data = paginator.page(page)
-				for item in page_data:
-					data = {
-						"restaurant_id" : item.res_id,
-						"review_number" : item.review_count,
-						"accuracey" : item.accuracey,
-						"weighted_score" : item.weight_score,
-						"final_score" : item.final_score,
-						"period" : period,
-					}
-					content.append(data)
-				response['data'] = content
-
-			return Response(response, status=status.HTTP_200_OK)
-		except Review.DoesNotExist:
-			response = {
-				"message": "Not found review data"
-			}
-			return Response(response, status=status.HTTP_404_NOT_FOUND)
-		except PageNotAnInteger:
-			response['data'] = paginator.page(1)
-		except EmptyPage:
-			response['data'] = paginator.page(paginator.num_pages)
-		except InvalidPage:
-			response = {
-				"message": "Invalid page"
-			}
-			return Response(response, status=status.HTTP_404_NOT_FOUND)
+		serializer = ReviewSerializer(data=request.data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(status=status.HTTP_200_OK)
+		else:
+			print("Validation error")
+			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+	else:
+		return Response(status=status.HTTP_400_BAD_REQUEST)
 
 # @api_view(['POST'])
 # def import_scrape_review_view(request, **kwargs):
@@ -306,3 +322,8 @@ class RestaurantScorePeriodView(generics.ListAPIView):
 # 			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 # 	else:
 # 		return Response(status=status.HTTP_400_BAD_REQUEST)
+
+# class ScrapeReviewStatusViewSet(viewsets.ModelViewSet):
+# 	queryset = ScrapeReviewStatus.objects.all()
+# 	serializer_class = ScrapeReviewStatusSerializer
+# 	pagination_class = PageNumberPagination

@@ -4,6 +4,6 @@ from restaurant.serializers import RestaurantSerializer
 from rest_framework import viewsets
 
 
-class RestaurantViewSet(viewsets.ModelViewSet):
+class RestaurantViewSet(viewsets.ReadOnlyModelViewSet):
 	queryset = Restaurant.objects.all()
 	serializer_class = RestaurantSerializer

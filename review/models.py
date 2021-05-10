@@ -15,7 +15,7 @@ class Review(models.Model):
 	country = models.CharField(max_length=45, blank=True)
 	state = models.CharField(max_length=45, blank=True)
 	created_date = models.DateField(blank=True, null=True, db_index=True)
-	res_id = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='res_review', help_text="Name of the restaurant")
+	res_id = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='res_review', to_field='res_id', help_text="Restaurant ID")
 
 	def __str__(self):
 		return self.author
