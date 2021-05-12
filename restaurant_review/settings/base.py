@@ -52,6 +52,7 @@ INSTALLED_APPS = [
 	'django_crontab',
 	'email_scrape',
 	'google_map',
+	'scrape_status',
 ]
 
 MIDDLEWARE = [
