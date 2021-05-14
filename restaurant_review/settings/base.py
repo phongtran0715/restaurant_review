@@ -167,6 +167,8 @@ CRONJOBS = [
 		' >> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/restaurant_calculation_job.log'))),
 	('0 0 * * *', 'email_scrape.cron.fetch_inbox_mail', 
 		'>> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/email_scrape_job.log'))),
+	('0 0 * * *', 'scrape_status.cron.report_scrape_status', 
+		'>> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/scrape_review_report.log'))),
 ]
 CRONTAB_LOCK_JOBS = True
 
@@ -200,8 +202,10 @@ STATICFILES_DIRS = (
 FETCH_EMAIL = env('FETCH_EMAIL')
 FETCH_EMAIL_PASSWORD = env('FETCH_EMAIL_PASSWORD')
 
-PROXY_API_KEY = env('PROXY_API_KEY')
+EMAIL_CONFIG = env.email_url('SYSTEM_EMAIL_URL')
+vars().update(EMAIL_CONFIG)
 
+PROXY_API_KEY = env('PROXY_API_KEY')
 
 EXTERNAL_BASE = os.path.join(BASE_DIR, "externals")
 EXTERNAL_LIBS_PATH = os.path.join(EXTERNAL_BASE, "libs")
