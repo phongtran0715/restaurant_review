@@ -3,6 +3,9 @@ from .models import ScrapeReviewStatus
 import logging
 from django.conf import settings
 import datetime
+from django.core.mail import EmailMessage
+from smtplib import SMTPException
+from django.template.loader import render_to_string
 
 
 logger = logging.getLogger(__name__)
@@ -31,5 +34,19 @@ def report_scrape_status():
 	context['report_date'] = today.strftime("%m/%d/%Y")
 	context['data'] = data
 
-	logger.info('context : {}'.format(context))
+	mail_subject = 'Scrape review status daily report.'
+	message = render_to_string('scrape_status/scrape_status_report.html', {
+		'data': context['data'],
+	})
+
+	to_email = 'phongtran0715@gmail.com'
+	email = EmailMessage(
+						mail_subject, message, to=[to_email]
+			)
+	try:
+		email.content_subtype = 'html'
+		email.send()
+	except SMTPException as e:
+		logger.error('There was an error sending an email:', e)
+
 	logger.info('Finish to create report')

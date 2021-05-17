@@ -4,13 +4,7 @@
 	<meta name="viewport" content="width=device-width" />
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 	<title>Simple Transactional Email</title>
-	<style>
-	  /* -------------------------------------
-		  GLOBAL RESETS
-	  ------------------------------------- */
-	  
-	  /*All the styling goes here*/
-	  
+	<style>	  
 	  img {
 		border: none;
 		-ms-interpolation-mode: bicubic;
@@ -349,16 +343,30 @@
 				  <table role="presentation" border="0" cellpadding="0" cellspacing="0">
 					<tr>
 					  <td>
-						<p>Hi there,</p>
-						<p>Sometimes you just want to send a simple HTML email with a simple design and clear call to action. This is it.</p>
+						<p>Hi Admin,</p>
+						<p>This is daily report for scraping review status actions</p>
 						<table role="presentation" border="0" cellpadding="0" cellspacing="0" class="btn btn-primary">
+							<thead>
+								<tr>
+									<th>Platform</th>
+									<th>Total failed</th>
+									<th>Total URLs</th>
+								</tr>
+							</thead>
 						  <tbody>
+						  	{% for it in data %}
+						  		<tr>
+						  			<th>{{it.platform}}</th>
+						  			<th>{{it.failed_count}}</th>
+						  			<th>{{it.url_count}}</th>
+						  		</tr>
+						  	{% endfor %}
 							<tr>
 							  <td align="left">
 								<table role="presentation" border="0" cellpadding="0" cellspacing="0">
 								  <tbody>
 									<tr>
-									  <td> <a href="http://htmlemail.io" target="_blank">Call To Action</a> </td>
+									  <td> <a href="http://54.252.173.242:8001/dashboard/5" target="_blank">More details</a> </td>
 									</tr>
 								  </tbody>
 								</table>
@@ -366,8 +374,7 @@
 							</tr>
 						  </tbody>
 						</table>
-						<p>This is a really simple email template. Its sole purpose is to get the recipient to click the button with no distractions.</p>
-						<p>Good luck! Hope it works.</p>
+						<p>Thanks!</p>
 					  </td>
 					</tr>
 				  </table>
@@ -384,7 +391,6 @@
 				<tr>
 				  <td class="content-block">
 					<span class="apple-link">Restaurant Review Team</span>
-					<br> Don't like these emails? <a href="h#">Unsubscribe</a>.
 				  </td>
 				</tr>
 			  </table>
