@@ -15,13 +15,14 @@ def report_scrape_status():
 	context = {}
 	data = []
 	today = datetime.datetime.now()
+	yesterday = datetime.date.today() - datetime.timedelta(days=1)
+	print(yesterday)
 	platforms = ScrapeReviewStatus.objects.values('platform').distinct()
 	logger.info(platforms.count())
 	for i in range (0, platforms.count()):
 		platform = platforms[i]['platform']
 		logger.info(platform)
-		today_scrapes = ScrapeReviewStatus.objects.filter(last_updated_at__year=today.year, 
-			last_updated_at__month=today.month, last_updated_at__day=today.day, platform = platform) 
+		today_scrapes = ScrapeReviewStatus.objects.filter(last_updated_at__date=yesterday, platform = platform) 
 		failed_scrape_num = today_scrapes.filter(status="FAILED").count()
 		scrape_url_num = today_scrapes.values('scrape_url').distinct().count()
 
@@ -39,7 +40,7 @@ def report_scrape_status():
 		'data': context['data'],
 	})
 
-	to_email = 'phongtran0715@gmail.com'
+	to_email = 'Feedback@restaurantreview.io'
 	email = EmailMessage(
 						mail_subject, message, to=[to_email]
 			)

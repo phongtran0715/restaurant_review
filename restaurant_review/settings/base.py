@@ -167,7 +167,7 @@ CRONJOBS = [
 		' >> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/restaurant_calculation_job.log'))),
 	('0 0 * * *', 'email_scrape.cron.fetch_inbox_mail', 
 		'>> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/email_scrape_job.log'))),
-	('0 0 * * *', 'scrape_status.cron.report_scrape_status', 
+	('0 8 * * *', 'scrape_status.cron.report_scrape_status', 
 		'>> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/scrape_review_report.log'))),
 ]
 CRONTAB_LOCK_JOBS = True
