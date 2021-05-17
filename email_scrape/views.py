@@ -14,6 +14,14 @@ class EmailListView(generics.ListCreateAPIView):
 	serializer_class = EmailSerializer
 	filterset_fields = ['subject', 'email_from', 'email_date', 'category']
 
+	def list(self, request):
+		queryset = self.get_queryset()
+		category = self.request.query_params.get('category')
+		if category is not None and category != "":
+			queryset = queryset.filter(email_from__contains="+{}+".format(category))
+		serializer = EmailSerializer(queryset, many=True)
+		return Response(serializer.data)
+
 class EmailDetailView(generics.RetrieveAPIView):
 	queryset = Email.objects.all()
 	serializer_class = EmailSerializer
