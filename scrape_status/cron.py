@@ -35,8 +35,8 @@ def sync_scrape_status():
 		if 'platform' in it and it['platform'] is not None:
 			platform = it['platform']
 
-		created_date = dateutil.parser.parse(it['created_at']).strftime("%d-%m-%Y")
-		last_updated_at = dateutil.parser.parse(it['last_updated_at']).strftime("%d-%m-%Y")
+		created_date = dateutil.parser.parse(it['created_at'])
+		last_updated_at = dateutil.parser.parse(it['last_updated_at'])
 		status_obj = ScrapeReviewStatus(error_msg=err_msg,
 			res_id=it['restaurant_id'],
 			scrape_url=it['restaurant_url'],
