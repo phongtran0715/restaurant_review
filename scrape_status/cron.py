@@ -21,15 +21,29 @@ def sync_scrape_status():
 	response = requests.get(url=get_url).json()
 	for it in response:
 		logger.info(it)
+
+		err_msg = ""
+		if it['error_stacktrace'] is not None:
+			err_msg = it['error_stacktrace']
+		review_count=0
+		if 'review_count' in it and it['review_count'] is not None:
+			review_count = int(it['review_count'])
+		retry_count=0
+		if 'retry_count' in it and it['retry_count'] is not None:
+			retry_count = int(it['retry_count'])
+		platform='UNKNOW'
+		if 'platform' in it and it['platform'] is not None:
+			platform = it['platform']
+
 		created_date = dateutil.parser.parse(it['created_at']).strftime("%d-%m-%Y")
 		last_updated_at = dateutil.parser.parse(it['last_updated_at']).strftime("%d-%m-%Y")
-		status_obj = ScrapeReviewStatus(error_msg=it['error_stacktrace'],
+		status_obj = ScrapeReviewStatus(error_msg=err_msg,
 			res_id=it['restaurant_id'],
 			scrape_url=it['restaurant_url'],
-			retry_count=int(it['retry_count']),
-			review_count=int(it['review_count']),
+			retry_count=int(retry_count),
+			review_count=int(review_count),
 			status=it['status'],
-			platform=it['platform'],
+			platform=platform,
 			created_date=created_date,
 			last_updated_at=last_updated_at)
 		status_obj.save()
