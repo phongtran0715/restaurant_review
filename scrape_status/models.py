@@ -11,8 +11,8 @@ class ScrapeReviewStatus(models.Model):
 	review_count = models.IntegerField(null=True, default=0)
 	status = models.CharField(null=True,default="UNKNOW", max_length=32, db_index=True)
 	platform = models.CharField(null=True,default="UNKNOW", max_length=32, db_index=True)
-	created_date = models.DateTimeField(blank=False, auto_now_add=True)
-	last_updated_at = models.DateTimeField(blank=False, auto_now_add=True)
+	created_date = models.DateTimeField(blank=False)
+	last_updated_at = models.DateTimeField(blank=False)
 
 	def __str__self():
 		return "{}-{}".format(self.res_id, self.platform)
