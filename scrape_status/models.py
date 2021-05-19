@@ -4,13 +4,13 @@ from django.utils.html import format_html
 
 
 class ScrapeReviewStatus(models.Model):
-	error_msg = models.CharField(blank=True, default="", max_length=1024)
+	error_msg = models.CharField(null=True, default="", max_length=1024)
 	res_id = models.IntegerField(default=0)
-	scrape_url = models.CharField(blank=True, default="", max_length=512);
-	retry_count = models.IntegerField(default=0)
-	review_count = models.IntegerField(default=0)
-	status = models.CharField(blank=False, default="UNKNOW", max_length=32, db_index=True)
-	platform = models.CharField(blank=False, default="UNKNOW", max_length=32, db_index=True)
+	scrape_url = models.CharField(null=True, default="", max_length=512);
+	retry_count = models.IntegerField(null=True, default=0)
+	review_count = models.IntegerField(null=True, default=0)
+	status = models.CharField(null=True,default="UNKNOW", max_length=32, db_index=True)
+	platform = models.CharField(null=True,default="UNKNOW", max_length=32, db_index=True)
 	created_date = models.DateTimeField(blank=False, auto_now_add=True)
 	last_updated_at = models.DateTimeField(blank=False, auto_now_add=True)
 
