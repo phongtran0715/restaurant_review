@@ -6,9 +6,34 @@ import datetime
 from django.core.mail import EmailMessage
 from smtplib import SMTPException
 from django.template.loader import render_to_string
+from django.conf import settings
+import requests
+import json
+import dateutil.parser
 
 
 logger = logging.getLogger(__name__)
+
+def sync_scrape_status():
+	logger.info('Start sync_scrape_status')
+	yesterday = (datetime.datetime.now() - datetime.timedelta(1)).strftime("%d-%m-%Y")
+	get_url = settings.SCRAPE_STATUS_URL.format(yesterday, yesterday)
+	response = requests.get(url=get_url).json()
+	for it in response:
+		logger.info(it)
+		created_date = dateutil.parser.parse(it['created_at']).strftime("%d-%m-%Y")
+		last_updated_at = dateutil.parser.parse(it['last_updated_at']).strftime("%d-%m-%Y")
+		status_obj = ScrapeReviewStatus(error_msg=it['error_stacktrace'],
+			res_id=it['restaurant_id'],
+			scrape_url=it['restaurant_url'],
+			retry_count=int(it['retry_count']),
+			review_count=int(it['review_count']),
+			status=it['status'],
+			platform=it['platform'],
+			created_date=created_date,
+			last_updated_at=last_updated_at)
+		status_obj.save()
+	logger.info('Finish sync_scrape_status')
 
 def report_scrape_status():
 	logger.info('Start to create report')
@@ -51,3 +76,6 @@ def report_scrape_status():
 		logger.error('There was an error sending an email:', e)
 
 	logger.info('Finish to create report')
+
+
+sync_scrape_status()

@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/3.1/ref/settings/
 import os, sys
 from pathlib import Path
 import environ
+from importlib import reload
 
 env = environ.Env(
 	# set casting, default value
@@ -169,6 +170,8 @@ CRONJOBS = [
 		'>> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/email_scrape_job.log'))),
 	('0 8 * * *', 'scrape_status.cron.report_scrape_status', 
 		'>> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/scrape_review_report.log'))),
+	('0 1 * * *', 'scrape_status.cron.sync_scrape_status', 
+		'>> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/sync_scrape_status.log'))),
 ]
 CRONTAB_LOCK_JOBS = True
 
@@ -211,6 +214,9 @@ EXTERNAL_BASE = os.path.join(BASE_DIR, "externals")
 EXTERNAL_LIBS_PATH = os.path.join(EXTERNAL_BASE, "libs")
 EXTERNAL_APPS_PATH = os.path.join(EXTERNAL_BASE, "apps")
 sys.path = ["", EXTERNAL_LIBS_PATH, EXTERNAL_APPS_PATH] + sys.path
+
+
+SCRAPE_STATUS_URL='http://scr.restaurantreview.io/report/?from_date={}&to_date={}'
 
 
 # Setting for admin template UI
