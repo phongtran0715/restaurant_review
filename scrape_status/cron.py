@@ -10,6 +10,7 @@ from django.conf import settings
 import requests
 import json
 import dateutil.parser
+from pprint import pprint
 
 
 logger = logging.getLogger(__name__)
@@ -56,11 +57,9 @@ def report_scrape_status():
 	today = datetime.datetime.now()
 	yesterday = datetime.date.today() - datetime.timedelta(days=1)
 	print(yesterday)
-	platforms = ScrapeReviewStatus.objects.values('platform').distinct()
-	logger.info(platforms.count())
-	for i in range (0, platforms.count()):
-		platform = platforms[i]['platform']
-		logger.info(platform)
+	platforms = ScrapeReviewStatus.objects.raw('SELECT distinct(platform), 1 as id FROM restaurant_db.scrape_status')
+	for it in platforms:
+		platform = it.platform
 		today_scrapes = ScrapeReviewStatus.objects.filter(last_updated_at__date=yesterday, platform = platform) 
 		failed_scrape_num = today_scrapes.filter(status="FAILED").count()
 		scrape_url_num = today_scrapes.values('scrape_url').distinct().count()
@@ -79,7 +78,8 @@ def report_scrape_status():
 		'data': context['data'],
 	})
 
-	to_email = 'Feedback@restaurantreview.io'
+	# to_email = 'Feedback@restaurantreview.io'
+	to_email = 'phongtran0715@gmail.com'
 	email = EmailMessage(
 						mail_subject, message, to=[to_email]
 			)
@@ -90,6 +90,3 @@ def report_scrape_status():
 		logger.error('There was an error sending an email:', e)
 
 	logger.info('Finish to create report')
-
-
-sync_scrape_status()
