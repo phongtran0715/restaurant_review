@@ -78,8 +78,8 @@ def report_scrape_status():
 		'data': context['data'],
 	})
 
-	# to_email = 'Feedback@restaurantreview.io'
-	to_email = 'phongtran0715@gmail.com'
+	to_email = 'Feedback@restaurantreview.io'
+	# to_email = 'phongtran0715@gmail.com'
 	email = EmailMessage(
 						mail_subject, message, to=[to_email]
 			)
