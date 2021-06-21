@@ -78,10 +78,10 @@ def report_scrape_status():
 		'data': context['data'],
 	})
 
-	to_email = 'Feedback@restaurantreview.io'
+	# to_email = 'Feedback@restaurantreview.io'
 	# to_email = 'phongtran0715@gmail.com'
 	email = EmailMessage(
-						mail_subject, message, to=[to_email]
+						mail_subject, message, to=['Feedback@restaurantreview.io', 'shoaib_573@yahoo.co.in']
 			)
 	try:
 		email.content_subtype = 'html'
