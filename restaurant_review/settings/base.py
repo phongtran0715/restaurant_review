@@ -54,6 +54,7 @@ INSTALLED_APPS = [
 	'email_scrape',
 	'google_map',
 	'scrape_status',
+	'user',
 ]
 
 MIDDLEWARE = [
@@ -93,6 +94,7 @@ WSGI_APPLICATION = 'restaurant_review.wsgi.application'
 
 DATABASES = {
 	'default': env.db(),
+	'productiondb' : env.db('DATABASE_PRODUCTION_URL'),
 	'OPTIONS': {
 			'charset': 'utf8mb4'
 		}
@@ -172,6 +174,8 @@ CRONJOBS = [
 		'>> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/scrape_review_report.log'))),
 	('0 1 * * *', 'scrape_status.cron.sync_scrape_status', 
 		'>> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/sync_scrape_status.log'))),
+	('0 1 * * *', 'user.cron.get_lighthouse_report', 
+		'>> {} 2>&1'.format(os.path.join(BASE_DIR, 'log/get_lighthouse_report.log'))),
 ]
 CRONTAB_LOCK_JOBS = True
 
@@ -225,3 +229,6 @@ SIMPLEUI_HOME_INFO = False
 SIMPLEUI_HOME_QUICK = True
 SIMPLEUI_HOME_ACTION = True
 SIMPLEUI_ANALYSIS = True
+
+DATABASE_ROUTERS = ['restaurant_review.router.CheckerRouter']
+AUTH_USER_MODEL = 'user.User'
