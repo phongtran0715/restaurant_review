@@ -4,7 +4,7 @@ from django.utils.html import format_html
 
 
 class ScrapeReviewStatus(models.Model):
-	error_msg = models.CharField(null=True, default="", max_length=1024)
+	error_msg = models.CharField(null=True, default="", max_length=5000)
 	res_id = models.IntegerField(default=0)
 	scrape_url = models.CharField(null=True, default="", max_length=512);
 	retry_count = models.IntegerField(null=True, default=0)
