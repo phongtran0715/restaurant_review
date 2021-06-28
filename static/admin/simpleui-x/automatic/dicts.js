@@ -158,4 +158,6 @@ var dicts = {
 
     'fas fa-object-group' : ['Platform', 'Platforms'], 
 
+    'fas fa-star-half-alt' : ['Score', 'Score months', 'Score quarters', 'Score years'], 
+
 }
