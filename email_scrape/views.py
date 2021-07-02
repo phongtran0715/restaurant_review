@@ -31,6 +31,20 @@ class EmailSenderListView(generics.ListAPIView):
 	queryset = Email.objects.values('email_from').distinct()
 	serializer_class = EmailSerializer
 
+	def list(self, request):
+		queryset = self.get_queryset()
+		serializer = EmailSerializer(queryset, many=True)
+		response = {}
+		email_data = []
+		for it in serializer.data:
+			email_count = Email.objects.filter(email_from=it['email_from']).count()
+			email_data.append({
+				"email_from" : it['email_from'],
+				"count" : email_count
+			})
+		response["data"] = email_data
+		return Response(response)
+
 '''
 @api_view(['GET'])
 def get_email_view(request, **kwargs):
