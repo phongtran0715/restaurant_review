@@ -5,29 +5,68 @@ from rest_framework import generics
 from email_scrape.models import Email
 from email_scrape.serializers import EmailSerializer
 import logging, json
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 
 class EmailListView(generics.ListCreateAPIView):
+	"""
+    Returns a list of scraped email in the system.
+    ---
+    parameters:
+    - name: subject
+      description: Email subject
+      required: false
+      type: string
+      paramType: form
+    - name: category
+      description: Email category
+      paramType: form
+      required: false
+      type: string
+
+    """
 	queryset = Email.objects.all()
 	serializer_class = EmailSerializer
-	filterset_fields = ['subject', 'email_from', 'email_date', 'category']
+	filterset_fields = ['subject', 'email_from', 'category']
 
 	def list(self, request):
 		queryset = self.get_queryset()
 		category = self.request.query_params.get('category')
+		subject = self.request.query_params.get('subject')
+		email_from = self.request.query_params.get('email_from')
+		date_from = self.request.query_params.get('date_from')
+		date_to = self.request.query_params.get('date_to')
+
 		if category is not None and category != "":
 			queryset = queryset.filter(email_from__contains="+{}+".format(category))
+		if subject is not None and subject != "":
+			queryset = queryset.filter(subject__contains="{}".format(subject))
+		if email_from is not None and email_from != "":
+			queryset = queryset.filter(email_from__exact="{}".format(email_from))
+		if date_from is not None and date_from != "":
+			queryset = queryset.filter(email_date__gte="{}".format(datetime.strptime(date_from, '%y-%m-%d')))
+		if date_to is not None and date_to != "":
+			queryset = queryset.filter(email_date__lte="{}".format(datetime.strptime(date_to, '%y-%m-%d')))
+
 		serializer = EmailSerializer(queryset, many=True)
 		return Response(serializer.data)
 
 class EmailDetailView(generics.RetrieveAPIView):
+	"""
+    Returns an email detail information.
+
+    """
 	queryset = Email.objects.all()
 	serializer_class = EmailSerializer
 	pagination_class = None
 
 class EmailSenderListView(generics.ListAPIView):
+	"""
+    Returns list sender email.
+
+    """
 	queryset = Email.objects.values('email_from').distinct()
 	serializer_class = EmailSerializer
 
@@ -44,108 +83,3 @@ class EmailSenderListView(generics.ListAPIView):
 			})
 		response["data"] = email_data
 		return Response(response)
-
-'''
-@api_view(['GET'])
-def get_email_view(request, **kwargs):
-	if request.method == 'GET':
-		category = request.GET.get('category')
-		email_subject = request.GET.get('subject')
-		email_from = request.GET.get('email_from')
-		date_from = request.GET.get('date_from')
-		date_to = request.GET.get('date_to')
-		
-		page = request.data.get('page', 1)
-		try:
-			response = {}
-			content = []
-			email_data = Email.objects.filter()
-			if email_subject is not None:
-				email_data = email_data.filter(subject__icontains=email_subject)
-			if email_from is not None:
-				email_data = email_data.filter(email_from__exact=email_from)
-			if date_from is not None:
-				email_data = email_data.filter(email_date__gte=date_from)
-			if date_to is not None:
-				email_data = email_data.filter(email_date__lte=date_to)
-			if category is not None:
-				email_data = email_data.filter(category__exact=category)
-
-			email_data = email_data.order_by('-email_date')
-			paginator = Paginator(email_data, 30)
-			response['total_record'] = paginator.count
-			response['page'] = page
-			response['total_page'] = paginator.num_pages
-			response['page_size'] = 30
-			if page > paginator.num_pages or page <= 0:
-				response['data'] = []
-			else:
-				page_data = paginator.page(page)
-				for item in page_data:
-					serializer = EmailSerializer(item)
-					content.append(serializer.data)
-				response['data'] = content
-			return Response(response, status=status.HTTP_200_OK)
-		except Email.DoesNotExist:
-			response = {
-				"message": "Not found email data"
-			}
-			return Response(response, status=status.HTTP_404_NOT_FOUND)
-		except PageNotAnInteger:
-			response['data'] = paginator.page(1)
-			return Response(response, status=status.HTTP_404_NOT_FOUND)
-		except EmptyPage:
-			response['data'] = paginator.page(paginator.num_pages)
-			return Response(response, status=status.HTTP_404_NOT_FOUND)
-		except InvalidPage:
-			response = {
-				"message": "Invalid page"
-			}
-			return Response(response, status=status.HTTP_404_NOT_FOUND)
-	else:
-		return Response(status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET'])
-def get_sender_view(request, **kwargs):
-	if request.method == 'GET':
-		page = request.data.get('page', 1)
-		try:
-			response = {}
-			content = []
-			# email_data = Email.objects.values('email_from').distinct()
-			email_data = Email.objects.raw('SELECT 1 as id, COUNT(*) as count, email_from from email_scrape WHERE YEAR(email_date) = YEAR(CURRENT_TIMESTAMP) group by email_from order by count desc')
-			paginator = Paginator(email_data, 10)
-			response['total_record'] = paginator.count
-			response['page'] = page
-			response['total_page'] = paginator.num_pages
-			response['page_size'] = 10
-			if page > paginator.num_pages or page <= 0:
-				response['data'] = []
-			else:
-				page_data = paginator.page(page)
-				for item in page_data:
-					content.append({
-						'email_from' : item.email_from,
-						'number_email' : item.count
-						})
-				response['data'] = content
-			return Response(response, status=status.HTTP_200_OK)
-		except Email.DoesNotExist:
-			response = {
-				"message": "Not found email data"
-			}
-			return Response(response, status=status.HTTP_404_NOT_FOUND)
-		except PageNotAnInteger:
-			response['data'] = paginator.page(1)
-			return Response(response, status=status.HTTP_404_NOT_FOUND)
-		except EmptyPage:
-			response['data'] = paginator.page(paginator.num_pages)
-			return Response(response, status=status.HTTP_404_NOT_FOUND)
-		except InvalidPage:
-			response = {
-				"message": "Invalid page"
-			}
-			return Response(response, status=status.HTTP_404_NOT_FOUND)
-	else:
-		return Response(status=status.HTTP_400_BAD_REQUEST)	
-'''	
