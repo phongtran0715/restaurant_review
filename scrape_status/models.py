@@ -18,5 +18,6 @@ class ScrapeReviewStatus(models.Model):
 		return "{}-{}".format(self.res_id, self.platform)
 
 	class Meta:
+		verbose_name_plural = "Status List"
 		db_table = "scrape_status"
 		ordering = ['res_id']

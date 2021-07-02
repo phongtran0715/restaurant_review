@@ -17,3 +17,4 @@ class Email(models.Model):
 	class Meta:
 		db_table = "email_scrape"
 		ordering = ["email_date"]
+		verbose_name_plural = "Scrape List"
