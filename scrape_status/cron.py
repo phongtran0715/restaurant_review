@@ -60,7 +60,7 @@ def report_scrape_status():
 	today = datetime.datetime.now()
 	yesterday = datetime.date.today() - datetime.timedelta(days=1)
 	print(yesterday)
-	platforms = ScrapeReviewStatus.objects.raw('SELECT distinct(platform), 1 as id FROM restaurant_db.scrape_status')
+	platforms = ScrapeReviewStatus.objects.raw('SELECT distinct(platform), 1 as id FROM scrape_status')
 	for it in platforms:
 		platform = it.platform
 		today_scrapes = ScrapeReviewStatus.objects.filter(last_updated_at__date=yesterday, platform = platform) 
